@@ -127,6 +127,10 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
     }
 
     fun insertItem(item: Item, onComplete: () -> Unit = {}) {
+        if (item.unitQuantity < 1) {
+            _uiState.update { it.copy(snackbarMessage = "Unit quantity cannot be less than 1") }
+            return
+        }
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
             try {
@@ -151,6 +155,10 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
     }
 
     fun saveAndWriteItem(item: Item, onWriteReady: (Item) -> Unit) {
+        if (item.unitQuantity < 1) {
+            _uiState.update { it.copy(snackbarMessage = "Unit quantity cannot be less than 1") }
+            return
+        }
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
             try {
@@ -175,6 +183,10 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
     }
 
     fun updateItem(item: Item, onComplete: () -> Unit = {}) {
+        if (item.unitQuantity < 1) {
+            _uiState.update { it.copy(snackbarMessage = "Unit quantity cannot be less than 1") }
+            return
+        }
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
             try {
@@ -316,6 +328,16 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
     }
 
     fun handleNfcWriteOperation(item: Item) {
+        if (item.unitQuantity < 1) {
+            _uiState.update {
+                it.copy(
+                    scanResultState = ScanResultState.Failed("Unit quantity cannot be less than 1"),
+                    snackbarMessage = "Unit quantity cannot be less than 1",
+                    isBusy = false
+                )
+            }
+            return
+        }
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
             try {

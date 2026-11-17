@@ -261,15 +261,66 @@ fun ItemFormScreen(
                             shape = RoundedCornerShape(CardCornerRadius),
                             singleLine = true
                         )
-                        OutlinedTextField(
-                            value = unitQuantityStr,
-                            onValueChange = { unitQuantityStr = it },
-                            label = { Text("Quantity") },
+
+                        val currentQty = unitQuantityStr.toIntOrNull() ?: 0
+                        Column(
                             modifier = Modifier.weight(1f),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            shape = RoundedCornerShape(CardCornerRadius),
-                            singleLine = true
-                        )
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                FilledTonalIconButton(
+                                    onClick = {
+                                        val current = unitQuantityStr.toIntOrNull() ?: 1
+                                        if (current > 1) {
+                                            unitQuantityStr = (current - 1).toString()
+                                        }
+                                    },
+                                    enabled = currentQty > 1,
+                                    modifier = Modifier.size(48.dp),
+                                    shape = RoundedCornerShape(CardCornerRadius)
+                                ) {
+                                    Icon(Icons.Rounded.Remove, contentDescription = "Decrease Quantity")
+                                }
+
+                                OutlinedTextField(
+                                    value = unitQuantityStr,
+                                    onValueChange = { newValue ->
+                                        if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
+                                            unitQuantityStr = newValue
+                                        }
+                                    },
+                                    label = { Text("Quantity *") },
+                                    modifier = Modifier.weight(1f),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    shape = RoundedCornerShape(CardCornerRadius),
+                                    singleLine = true,
+                                    isError = currentQty < 1
+                                )
+
+                                FilledTonalIconButton(
+                                    onClick = {
+                                        val current = unitQuantityStr.toIntOrNull() ?: 0
+                                        unitQuantityStr = (current + 1).coerceAtLeast(1).toString()
+                                    },
+                                    modifier = Modifier.size(48.dp),
+                                    shape = RoundedCornerShape(CardCornerRadius)
+                                ) {
+                                    Icon(Icons.Rounded.Add, contentDescription = "Increase Quantity")
+                                }
+                            }
+                            if (currentQty < 1) {
+                                Text(
+                                    text = "Minimum quantity is 1",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+                        }
                     }
 
                     Text("Age Group", style = MaterialTheme.typography.labelMedium)
@@ -344,6 +395,12 @@ fun ItemFormScreen(
             }
 
             // Save Buttons
+            val qty = unitQuantityStr.toIntOrNull() ?: 0
+            val isFormValid = itemName.isNotBlank() &&
+                              (nfcCodeStr.toIntOrNull() ?: 0) > 0 &&
+                              (unqCodeStr.toIntOrNull() ?: 0) > 0 &&
+                              qty >= 1
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -352,7 +409,6 @@ fun ItemFormScreen(
                     onClick = {
                         val nfc = nfcCodeStr.toIntOrNull()
                         val unq = unqCodeStr.toIntOrNull()
-                        val qty = unitQuantityStr.toIntOrNull() ?: 1
 
                         if (itemName.isBlank()) {
                             showError = true
@@ -367,6 +423,11 @@ fun ItemFormScreen(
                         if (unq == null || unq <= 0) {
                             showError = true
                             errorMessage = "Valid Unique Code is required."
+                            return@OutlinedButton
+                        }
+                        if (qty < 1) {
+                            showError = true
+                            errorMessage = "Unit quantity cannot be less than 1."
                             return@OutlinedButton
                         }
 
@@ -390,6 +451,7 @@ fun ItemFormScreen(
                         )
                         onSaveItem(finalItem)
                     },
+                    enabled = isFormValid,
                     modifier = Modifier
                         .weight(1f)
                         .height(50.dp),
@@ -404,7 +466,6 @@ fun ItemFormScreen(
                     onClick = {
                         val nfc = nfcCodeStr.toIntOrNull()
                         val unq = unqCodeStr.toIntOrNull()
-                        val qty = unitQuantityStr.toIntOrNull() ?: 1
 
                         if (itemName.isBlank()) {
                             showError = true
@@ -419,6 +480,11 @@ fun ItemFormScreen(
                         if (unq == null || unq <= 0) {
                             showError = true
                             errorMessage = "Valid Unique Code is required."
+                            return@Button
+                        }
+                        if (qty < 1) {
+                            showError = true
+                            errorMessage = "Unit quantity cannot be less than 1."
                             return@Button
                         }
 
@@ -442,6 +508,7 @@ fun ItemFormScreen(
                         )
                         onSaveAndWriteNfc(finalItem)
                     },
+                    enabled = isFormValid,
                     modifier = Modifier
                         .weight(1f)
                         .height(50.dp),

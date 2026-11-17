@@ -119,21 +119,21 @@ class NfcTagIO(private val activity: Activity) {
         }
 
         // 3. Try reading via NfcA basic tech or check if tag is NFC-A
-        val nfcA = NfcA.get(tag)
-        if (nfcA != null) {
-            try {
-                nfcA.connect()
-                return@withContext Result.failure(IOException("NFC-A / MIFARE tag is blank or unformatted. Write an item code to it first."))
-            } catch (e: TagLostException) {
-                return@withContext Result.failure(IOException("Tag was lost. Hold it still against the back of the phone and try again."))
-            } catch (e: IOException) {
-                return@withContext Result.failure(IOException("Tag I/O error occurred. Try again."))
-            } catch (e: Exception) {
-                return@withContext Result.failure(IOException("Tag is blank or unformatted."))
-            } finally {
-                try { nfcA.close() } catch (_: Exception) {}
-            }
-        }
+//        val nfcA = NfcA.get(tag)
+//        if (nfcA != null) {
+//            try {
+//                nfcA.connect()
+//                return@withContext Result.failure(IOException("NFC-A / MIFARE tag is blank or unformatted. Write an item code to it first."))
+//            } catch (e: TagLostException) {
+//                return@withContext Result.failure(IOException("Tag was lost. Hold it still against the back of the phone and try again."))
+//            } catch (e: IOException) {
+//                return@withContext Result.failure(IOException("Tag I/O error occurred. Try again."))
+//            } catch (e: Exception) {
+//                return@withContext Result.failure(IOException("Tag is blank or unformatted."))
+//            } finally {
+//                try { nfcA.close() } catch (_: Exception) {}
+//            }
+//        }
 
         return@withContext Result.failure(IOException("This tag is blank, unformatted, or unsupported. Write an item code to it first."))
     }

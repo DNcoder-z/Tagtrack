@@ -210,4 +210,30 @@ class TagTrackViewModelTest {
         assertTrue(state2.scanResultState is ScanResultState.Unregistered)
         assertEquals(999999, (state2.scanResultState as ScanResultState.Unregistered).scannedCode)
     }
+
+    @Test
+    fun testInvalidUnitQuantityRejected() = runTest {
+        val invalidItem = Item(
+            nfcCode = 100002,
+            unqCode = 500002,
+            itemName = "Invalid Item",
+            category = "Outerwear",
+            ageGroup = "Adult",
+            size = "L",
+            color = "Black",
+            condition = "New",
+            status = "Available",
+            unitQuantity = 0,
+            storageLocation = "Rack 1",
+            description = "Test description",
+            dateAdded = System.currentTimeMillis(),
+            dateUpdated = null
+        )
+
+        viewModel.insertItem(invalidItem)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.inventoryItems.isEmpty())
+        assertEquals("Unit quantity cannot be less than 1", viewModel.uiState.value.snackbarMessage)
+    }
 }
