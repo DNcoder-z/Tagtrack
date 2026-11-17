@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.Tagtrack" parent="Theme.MaterialComponents.Light" />
+</resources>
