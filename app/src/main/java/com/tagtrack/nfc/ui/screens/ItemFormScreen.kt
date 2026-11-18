@@ -1,5 +1,7 @@
 package com.tagtrack.nfc.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,6 +28,11 @@ import com.tagtrack.nfc.data.Item
 import com.tagtrack.nfc.ui.components.TagTrackHeader
 import com.tagtrack.nfc.ui.theme.BlueBronze
 import com.tagtrack.nfc.ui.theme.CardCornerRadius
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import com.tagtrack.nfc.util.ImageStorageManager
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +44,7 @@ fun ItemFormScreen(
     onSaveItem: (Item) -> Unit
 ) {
     val isEditing = itemToEdit != null
+    val context = LocalContext.current
 
     var itemName by remember { mutableStateOf(itemToEdit?.itemName ?: "") }
     var category by remember { mutableStateOf(itemToEdit?.category ?: "Costume") }
@@ -54,13 +62,89 @@ fun ItemFormScreen(
 
     var showError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
+    var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
+    var showPermissionExplanation by remember { mutableStateOf(false) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            photoUri = uri.toString()
+            val permanentPath = ImageStorageManager.saveUriToInternalStorage(context, uri)
+            if (permanentPath != null) {
+                photoUri = permanentPath
+            } else {
+                showError = true
+                errorMessage = "Failed to copy gallery image to internal storage."
+            }
         }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempCameraUri != null) {
+            val permanentPath = ImageStorageManager.saveUriToInternalStorage(context, tempCameraUri!!)
+            if (permanentPath != null) {
+                try {
+                    context.contentResolver.delete(tempCameraUri!!, null, null)
+                } catch (_: Exception) {}
+                photoUri = permanentPath
+            } else {
+                showError = true
+                errorMessage = "Failed to save captured photo."
+            }
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            try {
+                val photoFile = File.createTempFile(
+                    "JPEG_${System.currentTimeMillis()}_",
+                    ".jpg",
+                    context.cacheDir
+                )
+                val uri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    photoFile
+                )
+                tempCameraUri = uri
+                cameraLauncher.launch(uri)
+            } catch (e: Exception) {
+                showError = true
+                errorMessage = "Failed to create camera file: ${e.localizedMessage}"
+            }
+        } else {
+            showPermissionExplanation = true
+        }
+    }
+
+    if (showPermissionExplanation) {
+        AlertDialog(
+            onDismissRequest = { showPermissionExplanation = false },
+            title = { Text("Camera Permission Required") },
+            text = { Text("Camera permission is needed to capture photos of items for your inventory. Please grant camera permission to use this feature.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showPermissionExplanation = false
+                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                    }
+                ) {
+                    Text("Grant Permission")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showPermissionExplanation = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     val categories = listOf("Costume", "Prop", "Equipment", "Garment", "Accessory", "Other")
@@ -132,8 +216,15 @@ fun ItemFormScreen(
 
                     OutlinedTextField(
                         value = nfcCodeStr,
-                        onValueChange = { nfcCodeStr = it },
+                        onValueChange = {},
+                        readOnly = true,
                         label = { Text("NFC Hardware UID *") },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Rounded.Lock,
+                                contentDescription = "UID Locked"
+                            )
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(CardCornerRadius),
                         singleLine = true
@@ -181,7 +272,7 @@ fun ItemFormScreen(
                     )
 
                     // Photo & Media Section
-                    Text("Item Photo (Optional)", style = MaterialTheme.typography.labelMedium)
+                    Text("Item Photo *", style = MaterialTheme.typography.labelMedium)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -189,9 +280,9 @@ fun ItemFormScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                              .size(72.dp)
-                              .clip(RoundedCornerShape(CardCornerRadius))
-                              .background(MaterialTheme.colorScheme.surfaceVariant),
+                                .size(72.dp)
+                                .clip(RoundedCornerShape(CardCornerRadius))
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
                             contentAlignment = Alignment.Center
                         ) {
                             if (photoUri.isNotBlank()) {
@@ -218,21 +309,67 @@ fun ItemFormScreen(
                             OutlinedTextField(
                                 value = photoUri,
                                 onValueChange = { photoUri = it },
-                                label = { Text("Photo URI or URL") },
+                                label = { Text("Photo Path or URL *") },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(CardCornerRadius),
-                                singleLine = true
+                                singleLine = true,
+                                isError = photoUri.isBlank()
                             )
-                            OutlinedButton(
-                                onClick = { imagePickerLauncher.launch("image/*") },
+                            Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(CardCornerRadius)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(Icons.Rounded.PhotoCamera, contentDescription = null)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Pick from Gallery")
+                                OutlinedButton(
+                                    onClick = { imagePickerLauncher.launch("image/*") },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(CardCornerRadius)
+                                ) {
+                                    Icon(Icons.Rounded.PhotoLibrary, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Gallery")
+                                }
+                                OutlinedButton(
+                                    onClick = {
+                                        val permissionCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+                                        if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+                                            try {
+                                                val photoFile = File.createTempFile(
+                                                    "JPEG_${System.currentTimeMillis()}_",
+                                                    ".jpg",
+                                                    context.cacheDir
+                                                )
+                                                val uri = FileProvider.getUriForFile(
+                                                    context,
+                                                    "${context.packageName}.fileprovider",
+                                                    photoFile
+                                                )
+                                                tempCameraUri = uri
+                                                cameraLauncher.launch(uri)
+                                            } catch (e: Exception) {
+                                                showError = true
+                                                errorMessage = "Failed to create camera file: ${e.localizedMessage}"
+                                            }
+                                        } else {
+                                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(CardCornerRadius)
+                                ) {
+                                    Icon(Icons.Rounded.PhotoCamera, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Take Photo")
+                                }
                             }
                         }
+                    }
+                    if (photoUri.isBlank()) {
+                        Text(
+                            text = "Item photo is required",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
                     }
 
                     Text("Category", style = MaterialTheme.typography.labelMedium)
@@ -392,7 +529,8 @@ fun ItemFormScreen(
             val isFormValid = itemName.isNotBlank() &&
                               nfcCodeStr.isNotBlank() &&
                               (unqCodeStr.toIntOrNull() ?: 0) > 0 &&
-                              qty >= 1
+                              qty >= 1 &&
+                              photoUri.isNotBlank()
 
             Button(
                 onClick = {
@@ -406,6 +544,11 @@ fun ItemFormScreen(
                     if (nfcCodeStr.isBlank()) {
                         showError = true
                         errorMessage = "NFC Hardware UID is required."
+                        return@Button
+                    }
+                    if (photoUri.isBlank()) {
+                        showError = true
+                        errorMessage = "Item Photo is required."
                         return@Button
                     }
                     if (unq == null || unq <= 0) {
@@ -433,7 +576,7 @@ fun ItemFormScreen(
                         unitQuantity = qty,
                         storageLocation = storageLocation.ifBlank { null },
                         description = description.ifBlank { null },
-                        photoUri = photoUri.ifBlank { null },
+                        photoUri = photoUri.trim(),
                         dateAdded = itemToEdit?.dateAdded ?: currentTime,
                         dateUpdated = if (isEditing) currentTime else null
                     )

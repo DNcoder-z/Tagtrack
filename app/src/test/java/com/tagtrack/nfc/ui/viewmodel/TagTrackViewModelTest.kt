@@ -111,13 +111,13 @@ class TagTrackViewModelTest {
             nfcCode = "04A1", unqCode = 1, itemName = "Zebra Coat", category = "Outerwear",
             ageGroup = "Adult", size = "L", color = "Black", condition = "New",
             status = "Available", unitQuantity = 1, storageLocation = "Rack 1",
-            description = "Desc", dateAdded = 100L, dateUpdated = null
+            description = "Desc", photoUri = "content://dummy/photo1.jpg", dateAdded = 100L, dateUpdated = null
         )
         val item2 = Item(
             nfcCode = "04A2", unqCode = 2, itemName = "Apple Shirt", category = "Tops",
             ageGroup = "Adult", size = "M", color = "White", condition = "New",
             status = "Available", unitQuantity = 1, storageLocation = "Rack 2",
-            description = "Desc", dateAdded = 200L, dateUpdated = null
+            description = "Desc", photoUri = "content://dummy/photo2.jpg", dateAdded = 200L, dateUpdated = null
         )
 
         viewModel.insertItem(item1)
@@ -135,19 +135,19 @@ class TagTrackViewModelTest {
             nfcCode = "04A1", unqCode = 1, itemName = "Blue Jeans", category = "Apparel",
             ageGroup = "Adult", size = "32", color = "Blue", condition = "New",
             status = "Available", unitQuantity = 2, storageLocation = "Rack A",
-            description = "Desc", dateAdded = 100L, dateUpdated = null
+            description = "Desc", photoUri = "content://dummy/photo1.jpg", dateAdded = 100L, dateUpdated = null
         )
         val item2 = Item(
             nfcCode = "04A2", unqCode = 2, itemName = "blue jeans", category = "apparel",
             ageGroup = "Adult", size = "32", color = "Blue", condition = "Good",
             status = "Available", unitQuantity = 3, storageLocation = "Rack B",
-            description = "Desc", dateAdded = 200L, dateUpdated = null
+            description = "Desc", photoUri = "content://dummy/photo2.jpg", dateAdded = 200L, dateUpdated = null
         )
         val item3 = Item(
             nfcCode = "04A3", unqCode = 3, itemName = "Red Hat", category = "Accessories",
             ageGroup = "Adult", size = "Free", color = "Red", condition = "New",
             status = "Available", unitQuantity = 1, storageLocation = "Rack C",
-            description = "Desc", dateAdded = 300L, dateUpdated = null
+            description = "Desc", photoUri = "content://dummy/photo3.jpg", dateAdded = 300L, dateUpdated = null
         )
 
         viewModel.insertItem(item1)
@@ -181,6 +181,7 @@ class TagTrackViewModelTest {
             unitQuantity = 1,
             storageLocation = "Rack 1",
             description = "Test description",
+            photoUri = "content://dummy/photo.jpg",
             dateAdded = System.currentTimeMillis(),
             dateUpdated = null
         )
@@ -222,6 +223,7 @@ class TagTrackViewModelTest {
             unitQuantity = 1,
             storageLocation = "Rack 1",
             description = "Desc",
+            photoUri = "content://dummy/photo1.jpg",
             dateAdded = System.currentTimeMillis(),
             dateUpdated = null
         )
@@ -243,6 +245,7 @@ class TagTrackViewModelTest {
             unitQuantity = 1,
             storageLocation = "Rack 2",
             description = "Desc",
+            photoUri = "content://dummy/photo2.jpg",
             dateAdded = System.currentTimeMillis(),
             dateUpdated = null
         )
@@ -270,6 +273,7 @@ class TagTrackViewModelTest {
             unitQuantity = 0,
             storageLocation = "Rack 1",
             description = "Test description",
+            photoUri = "content://dummy/photo.jpg",
             dateAdded = System.currentTimeMillis(),
             dateUpdated = null
         )
@@ -279,5 +283,32 @@ class TagTrackViewModelTest {
 
         assertTrue(viewModel.uiState.value.inventoryItems.isEmpty())
         assertEquals("Unit quantity cannot be less than 1", viewModel.uiState.value.snackbarMessage)
+    }
+
+    @Test
+    fun testMissingPhotoUriRejected() = runTest {
+        val noPhotoItem = Item(
+            nfcCode = "04A224B2C16188",
+            unqCode = 500003,
+            itemName = "No Photo Item",
+            category = "Outerwear",
+            ageGroup = "Adult",
+            size = "L",
+            color = "Black",
+            condition = "New",
+            status = "Available",
+            unitQuantity = 1,
+            storageLocation = "Rack 1",
+            description = "Test description",
+            photoUri = null,
+            dateAdded = System.currentTimeMillis(),
+            dateUpdated = null
+        )
+
+        viewModel.insertItem(noPhotoItem)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.inventoryItems.isEmpty())
+        assertEquals("Item photo is required", viewModel.uiState.value.snackbarMessage)
     }
 }

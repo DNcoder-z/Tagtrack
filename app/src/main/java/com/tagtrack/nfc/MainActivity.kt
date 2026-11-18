@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val database = AppDatabase.getDatabase(applicationContext)
-        val repository = ItemRepository(database.itemDao())
+        val repository = ItemRepository(database.itemDao(), applicationContext)
 
         setContent {
             TagtrackTheme {

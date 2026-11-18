@@ -47,18 +47,18 @@ fun InventoryScreen(
                 }
                 IconButton(onClick = onNavigateToScanner) {
                     Icon(
-                        imageVector = Icons.Rounded.Nfc,
-                        contentDescription = "Scan NFC",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-                IconButton(onClick = onAddItemClick) {
-                    Icon(
                         imageVector = Icons.Rounded.Add,
-                        contentDescription = "Add Item",
+                        contentDescription = "Add Item ",
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
+//                IconButton(onClick = onAddItemClick) {
+//                    Icon(
+//                        imageVector = Icons.Rounded.Add,
+//                        contentDescription = "Add Item",
+//                        tint = MaterialTheme.colorScheme.primary
+//                    )
+//                }
             }
         )
 

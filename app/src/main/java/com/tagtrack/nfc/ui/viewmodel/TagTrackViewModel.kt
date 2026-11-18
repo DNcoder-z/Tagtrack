@@ -131,6 +131,10 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
             _uiState.update { it.copy(snackbarMessage = "NFC UID cannot be blank") }
             return
         }
+        if (item.photoUri.isNullOrBlank()) {
+            _uiState.update { it.copy(snackbarMessage = "Item photo is required") }
+            return
+        }
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
             try {
@@ -171,6 +175,10 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
         }
         if (item.nfcCode.isBlank()) {
             _uiState.update { it.copy(snackbarMessage = "NFC UID cannot be blank") }
+            return
+        }
+        if (item.photoUri.isNullOrBlank()) {
+            _uiState.update { it.copy(snackbarMessage = "Item photo is required") }
             return
         }
         viewModelScope.launch {

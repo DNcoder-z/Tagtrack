@@ -228,7 +228,7 @@ fun HomeScreen(
                         Text("Scan NFC")
                     }
                     OutlinedButton(
-                        onClick = onNavigateToForm,
+                        onClick = onNavigateToScanner,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(CardCornerRadius)
                     ) {
