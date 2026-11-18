@@ -14,13 +14,10 @@ interface ItemDao {
     fun getAllItems(): Flow<List<Item>>
 
     @Query("SELECT * FROM items WHERE nfcCode = :nfcCode")
-    suspend fun getItemByNfcCode(nfcCode: Int): Item?
+    suspend fun getItemByNfcCode(nfcCode: String): Item?
 
     @Query("SELECT * FROM items WHERE unqCode = :unqCode")
     suspend fun getItemByUnqCode(unqCode: Int): Item?
-
-    @Query("SELECT MAX(nfcCode) FROM items")
-    suspend fun getMaxNfcCode(): Int?
 
     @Query("SELECT MAX(unqCode) FROM items")
     suspend fun getMaxUnqCode(): Int?
@@ -38,7 +35,7 @@ interface ItemDao {
     suspend fun deleteItem(item: Item)
 
     @Query("DELETE FROM items WHERE nfcCode = :nfcCode")
-    suspend fun deleteItemByNfcCode(nfcCode: Int)
+    suspend fun deleteItemByNfcCode(nfcCode: String)
 
     @Query("SELECT SUM(unitQuantity) FROM items")
     fun getTotalUnitsFlow(): Flow<Int?>

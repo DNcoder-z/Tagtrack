@@ -7,14 +7,9 @@ class ItemRepository(private val itemDao: ItemDao) {
     val totalUnitsFlow: Flow<Int?> = itemDao.getTotalUnitsFlow()
     val totalRecordsFlow: Flow<Int> = itemDao.getTotalRecordsFlow()
 
-    suspend fun getItemByNfcCode(nfcCode: Int): Item? = itemDao.getItemByNfcCode(nfcCode)
+    suspend fun getItemByNfcCode(nfcCode: String): Item? = itemDao.getItemByNfcCode(nfcCode)
 
     suspend fun getItemByUnqCode(unqCode: Int): Item? = itemDao.getItemByUnqCode(unqCode)
-
-    suspend fun getNextNfcCode(): Int {
-        val maxNfc = itemDao.getMaxNfcCode() ?: 0
-        return if (maxNfc < 100000) 100001 else maxNfc + 1
-    }
 
     suspend fun getNextUnqCode(): Int {
         val maxUnq = itemDao.getMaxUnqCode() ?: 0
@@ -33,7 +28,7 @@ class ItemRepository(private val itemDao: ItemDao) {
         itemDao.deleteItem(item)
     }
 
-    suspend fun deleteItemByNfcCode(nfcCode: Int) {
+    suspend fun deleteItemByNfcCode(nfcCode: String) {
         itemDao.deleteItemByNfcCode(nfcCode)
     }
 

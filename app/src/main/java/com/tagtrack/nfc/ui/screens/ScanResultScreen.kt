@@ -17,15 +17,14 @@ import com.tagtrack.nfc.ui.components.ItemCard
 import com.tagtrack.nfc.ui.components.TagTrackHeader
 import com.tagtrack.nfc.ui.theme.CardCornerRadius
 import com.tagtrack.nfc.ui.theme.Green
-import com.tagtrack.nfc.ui.theme.Red
 
 @Composable
 fun ScanResultScreen(
-    scannedNfcCode: Int,
+    scannedNfcCode: String,
     item: Item?,
     onBackClick: () -> Unit,
     onViewDetails: (Item) -> Unit,
-    onRegisterItem: (Int) -> Unit,
+    onRegisterItem: (String) -> Unit,
     onScanAgain: () -> Unit
 ) {
     Column(
@@ -35,7 +34,7 @@ fun ScanResultScreen(
     ) {
         TagTrackHeader(
             title = "Scan Result",
-            subtitle = "NFC Code: #$scannedNfcCode",
+            subtitle = "NFC UID: $scannedNfcCode",
             onBackClick = onBackClick
         )
 
@@ -122,7 +121,7 @@ fun ScanResultScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Tag #$scannedNfcCode is not yet registered in the TagTrack database.",
+                    text = "Tag UID $scannedNfcCode is not yet registered in the TagTrack database.",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     ),

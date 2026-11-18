@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "items")
 data class Item(
     @PrimaryKey
-    val nfcCode: Int,
+    val nfcCode: String,
     val unqCode: Int,
     val itemName: String,
     val category: String,

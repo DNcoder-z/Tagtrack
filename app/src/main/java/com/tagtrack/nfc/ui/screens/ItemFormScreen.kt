@@ -31,17 +31,16 @@ import com.tagtrack.nfc.ui.theme.CardCornerRadius
 @Composable
 fun ItemFormScreen(
     itemToEdit: Item? = null,
-    defaultNfcCode: Int = 1000,
-    defaultUnqCode: Int = 1000,
+    prefilledNfcCode: String? = null,
+    defaultUnqCode: Int = 500001,
     onBackClick: () -> Unit,
-    onSaveItem: (Item) -> Unit,
-    onSaveAndWriteNfc: (Item) -> Unit
+    onSaveItem: (Item) -> Unit
 ) {
     val isEditing = itemToEdit != null
 
     var itemName by remember { mutableStateOf(itemToEdit?.itemName ?: "") }
     var category by remember { mutableStateOf(itemToEdit?.category ?: "Costume") }
-    var nfcCodeStr by remember { mutableStateOf(itemToEdit?.nfcCode?.toString() ?: defaultNfcCode.toString()) }
+    var nfcCodeStr by remember { mutableStateOf(itemToEdit?.nfcCode ?: prefilledNfcCode ?: "04A224B2C16180") }
     var unqCodeStr by remember { mutableStateOf(itemToEdit?.unqCode?.toString() ?: defaultUnqCode.toString()) }
     var ageGroup by remember { mutableStateOf(itemToEdit?.ageGroup ?: "Adults") }
     var size by remember { mutableStateOf(itemToEdit?.size ?: "M") }
@@ -76,7 +75,7 @@ fun ItemFormScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         TagTrackHeader(
-            title = if (isEditing) "Edit Item #${itemToEdit?.nfcCode}" else "Add New Item",
+            title = if (isEditing) "Edit Item #${itemToEdit?.unqCode}" else "Add New Item",
             subtitle = if (isEditing) "Update asset information" else "Register a new asset",
             onBackClick = onBackClick
         )
@@ -131,29 +130,23 @@ fun ItemFormScreen(
                         )
                     )
 
-                    Row(
+                    OutlinedTextField(
+                        value = nfcCodeStr,
+                        onValueChange = { nfcCodeStr = it },
+                        label = { Text("NFC Hardware UID *") },
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = nfcCodeStr,
-                            onValueChange = { nfcCodeStr = it },
-                            label = { Text("NFC Code *") },
-                            modifier = Modifier.weight(1f),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            shape = RoundedCornerShape(CardCornerRadius),
-                            singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = unqCodeStr,
-                            onValueChange = { unqCodeStr = it },
-                            label = { Text("Unique Code *") },
-                            modifier = Modifier.weight(1f),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            shape = RoundedCornerShape(CardCornerRadius),
-                            singleLine = true
-                        )
-                    }
+                        shape = RoundedCornerShape(CardCornerRadius),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = unqCodeStr,
+                        onValueChange = { unqCodeStr = it },
+                        label = { Text("Unique Code *") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        shape = RoundedCornerShape(CardCornerRadius),
+                        singleLine = true
+                    )
                 }
             }
 
@@ -394,131 +387,68 @@ fun ItemFormScreen(
                 }
             }
 
-            // Save Buttons
+            // Save Button
             val qty = unitQuantityStr.toIntOrNull() ?: 0
             val isFormValid = itemName.isNotBlank() &&
-                              (nfcCodeStr.toIntOrNull() ?: 0) > 0 &&
+                              nfcCodeStr.isNotBlank() &&
                               (unqCodeStr.toIntOrNull() ?: 0) > 0 &&
                               qty >= 1
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            Button(
+                onClick = {
+                    val unq = unqCodeStr.toIntOrNull()
+
+                    if (itemName.isBlank()) {
+                        showError = true
+                        errorMessage = "Item Name is required."
+                        return@Button
+                    }
+                    if (nfcCodeStr.isBlank()) {
+                        showError = true
+                        errorMessage = "NFC Hardware UID is required."
+                        return@Button
+                    }
+                    if (unq == null || unq <= 0) {
+                        showError = true
+                        errorMessage = "Valid Unique Code is required."
+                        return@Button
+                    }
+                    if (qty < 1) {
+                        showError = true
+                        errorMessage = "Unit quantity cannot be less than 1."
+                        return@Button
+                    }
+
+                    val currentTime = System.currentTimeMillis()
+                    val finalItem = Item(
+                        nfcCode = nfcCodeStr.trim().uppercase(),
+                        unqCode = unq,
+                        itemName = itemName.trim(),
+                        category = category,
+                        ageGroup = ageGroup,
+                        size = size,
+                        color = color.ifBlank { null },
+                        condition = condition,
+                        status = status,
+                        unitQuantity = qty,
+                        storageLocation = storageLocation.ifBlank { null },
+                        description = description.ifBlank { null },
+                        photoUri = photoUri.ifBlank { null },
+                        dateAdded = itemToEdit?.dateAdded ?: currentTime,
+                        dateUpdated = if (isEditing) currentTime else null
+                    )
+                    onSaveItem(finalItem)
+                },
+                enabled = isFormValid,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(CardCornerRadius),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                OutlinedButton(
-                    onClick = {
-                        val nfc = nfcCodeStr.toIntOrNull()
-                        val unq = unqCodeStr.toIntOrNull()
-
-                        if (itemName.isBlank()) {
-                            showError = true
-                            errorMessage = "Item Name is required."
-                            return@OutlinedButton
-                        }
-                        if (nfc == null || nfc <= 0) {
-                            showError = true
-                            errorMessage = "Valid NFC Code is required."
-                            return@OutlinedButton
-                        }
-                        if (unq == null || unq <= 0) {
-                            showError = true
-                            errorMessage = "Valid Unique Code is required."
-                            return@OutlinedButton
-                        }
-                        if (qty < 1) {
-                            showError = true
-                            errorMessage = "Unit quantity cannot be less than 1."
-                            return@OutlinedButton
-                        }
-
-                        val currentTime = System.currentTimeMillis()
-                        val finalItem = Item(
-                            nfcCode = nfc,
-                            unqCode = unq,
-                            itemName = itemName.trim(),
-                            category = category,
-                            ageGroup = ageGroup,
-                            size = size,
-                            color = color.ifBlank { null },
-                            condition = condition,
-                            status = status,
-                            unitQuantity = qty,
-                            storageLocation = storageLocation.ifBlank { null },
-                            description = description.ifBlank { null },
-                            photoUri = photoUri.ifBlank { null },
-                            dateAdded = itemToEdit?.dateAdded ?: currentTime,
-                            dateUpdated = if (isEditing) currentTime else null
-                        )
-                        onSaveItem(finalItem)
-                    },
-                    enabled = isFormValid,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp),
-                    shape = RoundedCornerShape(CardCornerRadius)
-                ) {
-                    Icon(Icons.Rounded.Save, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(if (isEditing) "Update" else "Save Only")
-                }
-
-                Button(
-                    onClick = {
-                        val nfc = nfcCodeStr.toIntOrNull()
-                        val unq = unqCodeStr.toIntOrNull()
-
-                        if (itemName.isBlank()) {
-                            showError = true
-                            errorMessage = "Item Name is required."
-                            return@Button
-                        }
-                        if (nfc == null || nfc <= 0) {
-                            showError = true
-                            errorMessage = "Valid NFC Code is required."
-                            return@Button
-                        }
-                        if (unq == null || unq <= 0) {
-                            showError = true
-                            errorMessage = "Valid Unique Code is required."
-                            return@Button
-                        }
-                        if (qty < 1) {
-                            showError = true
-                            errorMessage = "Unit quantity cannot be less than 1."
-                            return@Button
-                        }
-
-                        val currentTime = System.currentTimeMillis()
-                        val finalItem = Item(
-                            nfcCode = nfc,
-                            unqCode = unq,
-                            itemName = itemName.trim(),
-                            category = category,
-                            ageGroup = ageGroup,
-                            size = size,
-                            color = color.ifBlank { null },
-                            condition = condition,
-                            status = status,
-                            unitQuantity = qty,
-                            storageLocation = storageLocation.ifBlank { null },
-                            description = description.ifBlank { null },
-                            photoUri = photoUri.ifBlank { null },
-                            dateAdded = itemToEdit?.dateAdded ?: currentTime,
-                            dateUpdated = if (isEditing) currentTime else null
-                        )
-                        onSaveAndWriteNfc(finalItem)
-                    },
-                    enabled = isFormValid,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp),
-                    shape = RoundedCornerShape(CardCornerRadius),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Icon(Icons.Rounded.Nfc, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Save & Write NFC")
-                }
+                Icon(Icons.Rounded.Save, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(if (isEditing) "Update Item" else "Save Item", fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(16.dp))
         }

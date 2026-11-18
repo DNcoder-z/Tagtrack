@@ -21,8 +21,7 @@ import com.tagtrack.nfc.ui.theme.Green
 fun SettingsScreen(
     totalRecords: Int,
     totalUnits: Int,
-    onBackClick: () -> Unit,
-    onEraseNfcClick: () -> Unit
+    onBackClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -31,7 +30,7 @@ fun SettingsScreen(
     ) {
         TagTrackHeader(
             title = "Settings & Info",
-            subtitle = "Device & NFC Configuration",
+            subtitle = "Device & NFC Reader Configuration",
             onBackClick = onBackClick
         )
 
@@ -101,41 +100,6 @@ fun SettingsScreen(
                                 style = MaterialTheme.typography.labelSmall
                             )
                         }
-                    }
-                }
-            }
-
-            // NFC Operations Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(CardCornerRadius),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "NFC Operations",
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-
-                    OutlinedButton(
-                        onClick = onEraseNfcClick,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(CardCornerRadius),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Icon(imageVector = Icons.Rounded.DeleteSweep, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Erase NFC Tag Mode")
                     }
                 }
             }

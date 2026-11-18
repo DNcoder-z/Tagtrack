@@ -25,15 +25,13 @@ class TagTrackViewModelTest {
 
     private class FakeItemDao : ItemDao {
         private val itemsFlow = MutableStateFlow<List<Item>>(emptyList())
-        private val itemsMap = mutableMapOf<Int, Item>()
+        private val itemsMap = mutableMapOf<String, Item>()
 
         override fun getAllItems(): Flow<List<Item>> = itemsFlow
 
-        override suspend fun getItemByNfcCode(nfcCode: Int): Item? = itemsMap[nfcCode]
+        override suspend fun getItemByNfcCode(nfcCode: String): Item? = itemsMap[nfcCode]
 
         override suspend fun getItemByUnqCode(unqCode: Int): Item? = itemsMap.values.find { it.unqCode == unqCode }
-
-        override suspend fun getMaxNfcCode(): Int? = itemsMap.keys.maxOrNull()
 
         override suspend fun getMaxUnqCode(): Int? = itemsMap.values.maxOfOrNull { it.unqCode }
 
@@ -57,7 +55,7 @@ class TagTrackViewModelTest {
             itemsFlow.update { itemsMap.values.sortedBy { it.itemName } }
         }
 
-        override suspend fun deleteItemByNfcCode(nfcCode: Int) {
+        override suspend fun deleteItemByNfcCode(nfcCode: String) {
             itemsMap.remove(nfcCode)
             itemsFlow.update { itemsMap.values.sortedBy { it.itemName } }
         }
@@ -102,23 +100,21 @@ class TagTrackViewModelTest {
     }
 
     @Test
-    fun testCodeGeneration() = runTest {
-        val nextNfc = repository.getNextNfcCode()
+    fun testUniqueCodeGeneration() = runTest {
         val nextUnq = repository.getNextUnqCode()
-        assertEquals(100001, nextNfc)
         assertEquals(500001, nextUnq)
     }
 
     @Test
     fun testAlphabeticalSorting() = runTest {
         val item1 = Item(
-            nfcCode = 1, unqCode = 1, itemName = "Zebra Coat", category = "Outerwear",
+            nfcCode = "04A1", unqCode = 1, itemName = "Zebra Coat", category = "Outerwear",
             ageGroup = "Adult", size = "L", color = "Black", condition = "New",
             status = "Available", unitQuantity = 1, storageLocation = "Rack 1",
             description = "Desc", dateAdded = 100L, dateUpdated = null
         )
         val item2 = Item(
-            nfcCode = 2, unqCode = 2, itemName = "Apple Shirt", category = "Tops",
+            nfcCode = "04A2", unqCode = 2, itemName = "Apple Shirt", category = "Tops",
             ageGroup = "Adult", size = "M", color = "White", condition = "New",
             status = "Available", unitQuantity = 1, storageLocation = "Rack 2",
             description = "Desc", dateAdded = 200L, dateUpdated = null
@@ -136,19 +132,19 @@ class TagTrackViewModelTest {
     @Test
     fun testMergeSimilarItems() = runTest {
         val item1 = Item(
-            nfcCode = 1, unqCode = 1, itemName = "Blue Jeans", category = "Apparel",
+            nfcCode = "04A1", unqCode = 1, itemName = "Blue Jeans", category = "Apparel",
             ageGroup = "Adult", size = "32", color = "Blue", condition = "New",
             status = "Available", unitQuantity = 2, storageLocation = "Rack A",
             description = "Desc", dateAdded = 100L, dateUpdated = null
         )
         val item2 = Item(
-            nfcCode = 2, unqCode = 2, itemName = "blue jeans", category = "apparel",
+            nfcCode = "04A2", unqCode = 2, itemName = "blue jeans", category = "apparel",
             ageGroup = "Adult", size = "32", color = "Blue", condition = "Good",
             status = "Available", unitQuantity = 3, storageLocation = "Rack B",
             description = "Desc", dateAdded = 200L, dateUpdated = null
         )
         val item3 = Item(
-            nfcCode = 3, unqCode = 3, itemName = "Red Hat", category = "Accessories",
+            nfcCode = "04A3", unqCode = 3, itemName = "Red Hat", category = "Accessories",
             ageGroup = "Adult", size = "Free", color = "Red", condition = "New",
             status = "Available", unitQuantity = 1, storageLocation = "Rack C",
             description = "Desc", dateAdded = 300L, dateUpdated = null
@@ -173,7 +169,7 @@ class TagTrackViewModelTest {
     @Test
     fun testInsertAndScanItem() = runTest {
         val newItem = Item(
-            nfcCode = 100001,
+            nfcCode = "04A224B2C16180",
             unqCode = 500001,
             itemName = "Test Jacket",
             category = "Outerwear",
@@ -195,7 +191,7 @@ class TagTrackViewModelTest {
         assertEquals(1, viewModel.uiState.value.inventoryItems.size)
 
         // Test scan registered
-        viewModel.handleNfcScanResult(100001)
+        viewModel.handleNfcScanResult("04A224B2C16180")
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -203,18 +199,66 @@ class TagTrackViewModelTest {
         assertEquals("Test Jacket", (state.scanResultState as ScanResultState.Registered).item.itemName)
 
         // Test scan unregistered
-        viewModel.handleNfcScanResult(999999)
+        viewModel.handleNfcScanResult("04FFFFFFFFFFFF")
         testDispatcher.scheduler.advanceUntilIdle()
 
         val state2 = viewModel.uiState.value
         assertTrue(state2.scanResultState is ScanResultState.Unregistered)
-        assertEquals(999999, (state2.scanResultState as ScanResultState.Unregistered).scannedCode)
+        assertEquals("04FFFFFFFFFFFF", (state2.scanResultState as ScanResultState.Unregistered).scannedCode)
+    }
+
+    @Test
+    fun testDuplicateUidLinkingRejected() = runTest {
+        val item1 = Item(
+            nfcCode = "04DUPLICATEUID",
+            unqCode = 500001,
+            itemName = "First Item",
+            category = "Outerwear",
+            ageGroup = "Adult",
+            size = "L",
+            color = "Black",
+            condition = "New",
+            status = "Available",
+            unitQuantity = 1,
+            storageLocation = "Rack 1",
+            description = "Desc",
+            dateAdded = System.currentTimeMillis(),
+            dateUpdated = null
+        )
+
+        viewModel.insertItem(item1)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.inventoryItems.size)
+
+        val duplicateItem = Item(
+            nfcCode = "04DUPLICATEUID",
+            unqCode = 500002,
+            itemName = "Second Item",
+            category = "Outerwear",
+            ageGroup = "Adult",
+            size = "M",
+            color = "Blue",
+            condition = "New",
+            status = "Available",
+            unitQuantity = 1,
+            storageLocation = "Rack 2",
+            description = "Desc",
+            dateAdded = System.currentTimeMillis(),
+            dateUpdated = null
+        )
+
+        viewModel.insertItem(duplicateItem)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Should still be 1 item because duplicate UID insert was rejected
+        assertEquals(1, viewModel.uiState.value.inventoryItems.size)
+        assertTrue(viewModel.uiState.value.snackbarMessage?.contains("already linked") == true)
     }
 
     @Test
     fun testInvalidUnitQuantityRejected() = runTest {
         val invalidItem = Item(
-            nfcCode = 100002,
+            nfcCode = "04A224B2C16199",
             unqCode = 500002,
             itemName = "Invalid Item",
             category = "Outerwear",

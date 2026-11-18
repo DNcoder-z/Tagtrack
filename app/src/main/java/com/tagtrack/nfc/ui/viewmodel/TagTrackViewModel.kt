@@ -14,21 +14,21 @@ import kotlinx.coroutines.launch
 sealed interface Screen {
     data object HomeScreen : Screen
     data object InventoryScreen : Screen
-    data class ItemDetailsScreen(val nfcCode: Int) : Screen
-    data class ItemFormScreen(val isEditing: Boolean = false, val item: Item? = null) : Screen
-    data class ScannerScreen(val mode: ScanMode = ScanMode.IDLE) : Screen
-    data class ScanResultScreen(val scannedNfcCode: Int, val item: Item? = null) : Screen
+    data class ItemDetailsScreen(val nfcCode: String) : Screen
+    data class ItemFormScreen(val isEditing: Boolean = false, val item: Item? = null, val prefilledNfcCode: String? = null) : Screen
+    data class ScannerScreen(val mode: ScanMode = ScanMode.READ) : Screen
+    data class ScanResultScreen(val scannedNfcCode: String, val item: Item? = null) : Screen
     data object SettingsScreen : Screen
 }
 
 enum class ScanMode {
-    IDLE, READ, WRITE, ERASE
+    IDLE, READ
 }
 
 sealed interface ScanResultState {
     data object Idle : ScanResultState
     data class Registered(val item: Item) : ScanResultState
-    data class Unregistered(val scannedCode: Int) : ScanResultState
+    data class Unregistered(val scannedCode: String) : ScanResultState
     data class Failed(val reason: String) : ScanResultState
 }
 
@@ -77,7 +77,7 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
         return items.filter { item ->
             item.itemName.lowercase().contains(trimmed) ||
                     item.category.lowercase().contains(trimmed) ||
-                    item.nfcCode.toString().contains(trimmed) ||
+                    item.nfcCode.lowercase().contains(trimmed) ||
                     item.unqCode.toString().contains(trimmed) ||
                     (item.color?.lowercase()?.contains(trimmed) == true) ||
                     (item.size?.lowercase()?.contains(trimmed) == true) ||
@@ -111,15 +111,11 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
         _uiState.update { it.copy(scanMode = mode) }
     }
 
-    fun loadItemByNfcCode(nfcCode: Int) {
+    fun loadItemByNfcCode(nfcCode: String) {
         viewModelScope.launch {
             val item = repository.getItemByNfcCode(nfcCode)
             _uiState.update { it.copy(selectedItem = item) }
         }
-    }
-
-    suspend fun getNextNfcCode(): Int {
-        return repository.getNextNfcCode()
     }
 
     suspend fun getNextUnqCode(): Int {
@@ -131,9 +127,23 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
             _uiState.update { it.copy(snackbarMessage = "Unit quantity cannot be less than 1") }
             return
         }
+        if (item.nfcCode.isBlank()) {
+            _uiState.update { it.copy(snackbarMessage = "NFC UID cannot be blank") }
+            return
+        }
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
             try {
+                val existing = repository.getItemByNfcCode(item.nfcCode)
+                if (existing != null) {
+                    _uiState.update {
+                        it.copy(
+                            snackbarMessage = "Error: NFC UID '${item.nfcCode}' is already linked to item '${existing.itemName}'",
+                            isBusy = false
+                        )
+                    }
+                    return@launch
+                }
                 repository.insertItem(item)
                 _uiState.update {
                     it.copy(
@@ -154,42 +164,28 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
         }
     }
 
-    fun saveAndWriteItem(item: Item, onWriteReady: (Item) -> Unit) {
-        if (item.unitQuantity < 1) {
-            _uiState.update { it.copy(snackbarMessage = "Unit quantity cannot be less than 1") }
-            return
-        }
-        viewModelScope.launch {
-            _uiState.update { it.copy(isBusy = true) }
-            try {
-                repository.insertItem(item)
-                _uiState.update {
-                    it.copy(
-                        selectedItem = item,
-                        snackbarMessage = "Item '${item.itemName}' saved. Ready to write NFC tag.",
-                        isBusy = false
-                    )
-                }
-                onWriteReady(item)
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        snackbarMessage = "Error saving item: ${e.localizedMessage}",
-                        isBusy = false
-                    )
-                }
-            }
-        }
-    }
-
     fun updateItem(item: Item, onComplete: () -> Unit = {}) {
         if (item.unitQuantity < 1) {
             _uiState.update { it.copy(snackbarMessage = "Unit quantity cannot be less than 1") }
             return
         }
+        if (item.nfcCode.isBlank()) {
+            _uiState.update { it.copy(snackbarMessage = "NFC UID cannot be blank") }
+            return
+        }
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
             try {
+                val existing = repository.getItemByNfcCode(item.nfcCode)
+                if (existing != null && existing.unqCode != item.unqCode) {
+                    _uiState.update {
+                        it.copy(
+                            snackbarMessage = "Error: NFC UID '${item.nfcCode}' is already linked to item '${existing.itemName}'",
+                            isBusy = false
+                        )
+                    }
+                    return@launch
+                }
                 repository.updateItem(item)
                 _uiState.update {
                     it.copy(
@@ -228,7 +224,7 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
         }
     }
 
-    fun deleteItemByNfcCode(nfcCode: Int) {
+    fun deleteItemByNfcCode(nfcCode: String) {
         viewModelScope.launch {
             try {
                 repository.deleteItemByNfcCode(nfcCode)
@@ -301,16 +297,16 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
         }
     }
 
-    fun handleNfcScanResult(scannedNfcCode: Int) {
+    fun handleNfcScanResult(scannedUid: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
-            val item = repository.getItemByNfcCode(scannedNfcCode)
+            val item = repository.getItemByNfcCode(scannedUid)
             if (item != null) {
                 _uiState.update {
                     it.copy(
                         selectedItem = item,
                         scanResultState = ScanResultState.Registered(item),
-                        currentScreen = Screen.ScanResultScreen(scannedNfcCode, item),
+                        currentScreen = Screen.ScanResultScreen(scannedUid, item),
                         isBusy = false
                     )
                 }
@@ -318,51 +314,8 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
                 _uiState.update {
                     it.copy(
                         selectedItem = null,
-                        scanResultState = ScanResultState.Unregistered(scannedNfcCode),
-                        currentScreen = Screen.ScanResultScreen(scannedNfcCode, null),
-                        isBusy = false
-                    )
-                }
-            }
-        }
-    }
-
-    fun handleNfcWriteOperation(item: Item) {
-        if (item.unitQuantity < 1) {
-            _uiState.update {
-                it.copy(
-                    scanResultState = ScanResultState.Failed("Unit quantity cannot be less than 1"),
-                    snackbarMessage = "Unit quantity cannot be less than 1",
-                    isBusy = false
-                )
-            }
-            return
-        }
-        viewModelScope.launch {
-            _uiState.update { it.copy(isBusy = true) }
-            try {
-                val nfcCodeToUse = if (item.nfcCode <= 0) repository.getNextNfcCode() else item.nfcCode
-                val unqCodeToUse = if (item.unqCode <= 0) repository.getNextUnqCode() else item.unqCode
-                val finalItem = item.copy(
-                    nfcCode = nfcCodeToUse,
-                    unqCode = unqCodeToUse,
-                    dateUpdated = System.currentTimeMillis()
-                )
-                repository.insertItem(finalItem)
-                _uiState.update {
-                    it.copy(
-                        selectedItem = finalItem,
-                        scanResultState = ScanResultState.Registered(finalItem),
-                        snackbarMessage = "NFC Tag successfully written for #${finalItem.nfcCode}",
-                        currentScreen = Screen.ItemDetailsScreen(finalItem.nfcCode),
-                        isBusy = false
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        scanResultState = ScanResultState.Failed(e.localizedMessage ?: "Unknown error"),
-                        snackbarMessage = "NFC Write failed: ${e.localizedMessage}",
+                        scanResultState = ScanResultState.Unregistered(scannedUid),
+                        currentScreen = Screen.ScanResultScreen(scannedUid, null),
                         isBusy = false
                     )
                 }

@@ -31,9 +31,7 @@ fun ItemDetailsScreen(
     item: Item?,
     onBackClick: () -> Unit,
     onEditClick: (Item) -> Unit,
-    onDeleteClick: (Item) -> Unit,
-    onWriteNfcClick: (Item) -> Unit,
-    onEraseNfcClick: (Item) -> Unit
+    onDeleteClick: (Item) -> Unit
 ) {
     if (item == null) {
         Column(
@@ -70,7 +68,7 @@ fun ItemDetailsScreen(
     ) {
         TagTrackHeader(
             title = item.itemName,
-            subtitle = "Unq #${item.unqCode} • NFC #${item.nfcCode}",
+            subtitle = "Unq #${item.unqCode} • NFC: ${item.nfcCode}",
             onBackClick = onBackClick,
             actions = {
                 IconButton(onClick = { onEditClick(item) }) {
@@ -166,30 +164,6 @@ fun ItemDetailsScreen(
                 }
             }
 
-            // Quick NFC Write Action
-            Button(
-                onClick = { onWriteNfcClick(item) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(CardCornerRadius),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Icon(imageVector = Icons.Rounded.Nfc, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Write to NFC Tag")
-            }
-
-            // Quick NFC Erase Action
-            OutlinedButton(
-                onClick = { onEraseNfcClick(item) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(CardCornerRadius),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-            ) {
-                Icon(imageVector = Icons.Rounded.DeleteSweep, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Erase NFC Tag")
-            }
-
             // Attributes Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -212,7 +186,7 @@ fun ItemDetailsScreen(
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline)
 
-                    AttributeRow(label = "NFC Code", value = "#${item.nfcCode}")
+                    AttributeRow(label = "NFC Hardware UID", value = item.nfcCode)
                     AttributeRow(label = "Unique Code", value = "#${item.unqCode}")
                     AttributeRow(label = "Category", value = item.category)
                     AttributeRow(label = "Age Group", value = item.ageGroup)

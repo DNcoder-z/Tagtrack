@@ -1,6 +1,5 @@
 package com.tagtrack.nfc
 
-import android.nfc.Tag
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -46,11 +45,6 @@ class MainActivity : ComponentActivity() {
                 val nfcTagIO = remember { NfcTagIO(activity) }
                 val isOperationInProgress = remember { AtomicBoolean(false) }
 
-                // Overwrite confirmation dialog states
-                var showOverwriteDialog by remember { mutableStateOf(false) }
-                var pendingWriteTag by remember { mutableStateOf<Tag?>(null) }
-                var existingTagCode by remember { mutableStateOf<Int?>(null) }
-
                 // Integrate NFC reader mode lifecycle
                 LaunchedEffect(uiState.currentScreen) {
                     if (uiState.currentScreen is Screen.ScannerScreen) {
@@ -62,57 +56,14 @@ class MainActivity : ComponentActivity() {
                                     if (isOperationInProgress.compareAndSet(false, true)) {
                                         coroutineScope.launch {
                                             try {
-                                                when (mode) {
-                                                    ScanMode.READ -> {
-                                                        nfcTagIO.readTag(tag).fold(
-                                                            onSuccess = { nfcCode ->
-                                                                viewModel.handleNfcScanResult(nfcCode)
-                                                            },
-                                                            onFailure = { error ->
-                                                                viewModel.showSnackbar(error.message ?: "Failed to read tag")
-                                                            }
-                                                        )
+                                                nfcTagIO.readTagUid(tag).fold(
+                                                    onSuccess = { uid ->
+                                                        viewModel.handleNfcScanResult(uid)
+                                                    },
+                                                    onFailure = { error ->
+                                                        viewModel.showSnackbar(error.message ?: "Failed to read tag UID")
                                                     }
-                                                    ScanMode.WRITE -> {
-                                                        val selectedItem = uiState.selectedItem
-                                                        if (selectedItem != null) {
-                                                            // Check if tag has an existing code
-                                                            val readResult = nfcTagIO.readTag(tag)
-                                                            if (readResult.isSuccess) {
-                                                                val existingCode = readResult.getOrNull()
-                                                                if (existingCode != null && existingCode != selectedItem.nfcCode) {
-                                                                    pendingWriteTag = tag
-                                                                    existingTagCode = existingCode
-                                                                    showOverwriteDialog = true
-                                                                    return@launch
-                                                                }
-                                                            }
-
-                                                            nfcTagIO.writeTag(tag, selectedItem.nfcCode, onConfirmOverwrite = { _ -> true }).fold(
-                                                                onSuccess = {
-                                                                    viewModel.handleNfcWriteOperation(selectedItem)
-                                                                },
-                                                                onFailure = { error ->
-                                                                    viewModel.showSnackbar(error.message ?: "Failed to write tag")
-                                                                }
-                                                            )
-                                                        } else {
-                                                            viewModel.showSnackbar("No item selected for writing")
-                                                        }
-                                                    }
-                                                    ScanMode.ERASE -> {
-                                                        nfcTagIO.eraseTag(tag).fold(
-                                                            onSuccess = {
-                                                                viewModel.showSnackbar("NFC Tag successfully erased")
-                                                                viewModel.navigateTo(Screen.InventoryScreen)
-                                                            },
-                                                            onFailure = { error ->
-                                                                viewModel.showSnackbar(error.message ?: "Failed to erase tag")
-                                                            }
-                                                        )
-                                                    }
-                                                    ScanMode.IDLE -> {}
-                                                }
+                                                )
                                             } finally {
                                                 isOperationInProgress.set(false)
                                             }
@@ -145,61 +96,6 @@ class MainActivity : ComponentActivity() {
                             viewModel.clearSnackbar()
                         }
                     }
-                }
-
-                // Overwrite confirmation dialog
-                if (showOverwriteDialog && existingTagCode != null && pendingWriteTag != null && uiState.selectedItem != null) {
-                    AlertDialog(
-                        onDismissRequest = {
-                            showOverwriteDialog = false
-                            pendingWriteTag = null
-                            existingTagCode = null
-                        },
-                        title = { Text("Overwrite NFC Tag?") },
-                        text = { Text("This tag currently contains NFC Code #$existingTagCode. Do you want to overwrite it with NFC Code #${uiState.selectedItem!!.nfcCode}?") },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    val tagToWr = pendingWriteTag!!
-                                    val itemToWr = uiState.selectedItem!!
-                                    showOverwriteDialog = false
-                                    pendingWriteTag = null
-                                    existingTagCode = null
-
-                                    coroutineScope.launch {
-                                        if (isOperationInProgress.compareAndSet(false, true)) {
-                                            try {
-                                                nfcTagIO.writeTag(tagToWr, itemToWr.nfcCode, onConfirmOverwrite = { true }).fold(
-                                                    onSuccess = {
-                                                        viewModel.handleNfcWriteOperation(itemToWr)
-                                                    },
-                                                    onFailure = { error ->
-                                                        viewModel.showSnackbar(error.message ?: "Failed to write tag")
-                                                    }
-                                                )
-                                            } finally {
-                                                isOperationInProgress.set(false)
-                                            }
-                                        }
-                                    }
-                                }
-                            ) {
-                                Text("Overwrite")
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(
-                                onClick = {
-                                    showOverwriteDialog = false
-                                    pendingWriteTag = null
-                                    existingTagCode = null
-                                    viewModel.showSnackbar("Overwrite cancelled")
-                                }
-                            ) {
-                                Text("Cancel")
-                            }
-                        }
-                    )
                 }
 
                 // Determine active bottom nav tab based on current screen
@@ -272,21 +168,13 @@ class MainActivity : ComponentActivity() {
                                     item = uiState.selectedItem,
                                     onBackClick = { viewModel.navigateTo(Screen.InventoryScreen) },
                                     onEditClick = { item -> viewModel.navigateTo(Screen.ItemFormScreen(isEditing = true, item = item)) },
-                                    onDeleteClick = { item -> viewModel.deleteItem(item); viewModel.navigateTo(Screen.InventoryScreen) },
-                                    onWriteNfcClick = { item ->
-                                        viewModel.selectItem(item)
-                                        viewModel.navigateTo(Screen.ScannerScreen(ScanMode.WRITE))
-                                    },
-                                    onEraseNfcClick = { item ->
-                                        viewModel.selectItem(item)
-                                        viewModel.navigateTo(Screen.ScannerScreen(ScanMode.ERASE))
-                                    }
+                                    onDeleteClick = { item -> viewModel.deleteItem(item); viewModel.navigateTo(Screen.InventoryScreen) }
                                 )
                             }
                             is Screen.ItemFormScreen -> {
                                 ItemFormScreen(
                                     itemToEdit = screen.item,
-                                    defaultNfcCode = 100009,
+                                    prefilledNfcCode = screen.prefilledNfcCode,
                                     defaultUnqCode = 500009,
                                     onBackClick = { viewModel.navigateTo(Screen.InventoryScreen) },
                                     onSaveItem = { item ->
@@ -295,19 +183,6 @@ class MainActivity : ComponentActivity() {
                                         } else {
                                             viewModel.insertItem(item)
                                         }
-                                    },
-                                    onSaveAndWriteNfc = { item ->
-                                        if (screen.isEditing) {
-                                            viewModel.updateItem(item) {
-                                                viewModel.selectItem(item)
-                                                viewModel.navigateTo(Screen.ScannerScreen(ScanMode.WRITE))
-                                            }
-                                        } else {
-                                            viewModel.saveAndWriteItem(item) { saved ->
-                                                viewModel.selectItem(saved)
-                                                viewModel.navigateTo(Screen.ScannerScreen(ScanMode.WRITE))
-                                            }
-                                        }
                                     }
                                 )
                             }
@@ -315,15 +190,8 @@ class MainActivity : ComponentActivity() {
                                 ScannerScreen(
                                     scanMode = screen.mode,
                                     onBackClick = { viewModel.navigateTo(Screen.HomeScreen) },
-                                    onSimulateScan = { nfcCode ->
-                                        if (screen.mode == ScanMode.WRITE && uiState.selectedItem != null) {
-                                            viewModel.handleNfcWriteOperation(uiState.selectedItem!!)
-                                        } else if (screen.mode == ScanMode.ERASE) {
-                                            viewModel.showSnackbar("NFC Tag successfully erased")
-                                            viewModel.navigateTo(Screen.InventoryScreen)
-                                        } else {
-                                            viewModel.handleNfcScanResult(nfcCode)
-                                        }
+                                    onSimulateScan = { scannedUid ->
+                                        viewModel.handleNfcScanResult(scannedUid)
                                     }
                                 )
                             }
@@ -334,7 +202,7 @@ class MainActivity : ComponentActivity() {
                                     onBackClick = { viewModel.navigateTo(Screen.ScannerScreen(ScanMode.READ)) },
                                     onViewDetails = { item -> viewModel.navigateTo(Screen.ItemDetailsScreen(item.nfcCode)) },
                                     onRegisterItem = { code ->
-                                        viewModel.navigateTo(Screen.ItemFormScreen(isEditing = false, item = null))
+                                        viewModel.navigateTo(Screen.ItemFormScreen(isEditing = false, prefilledNfcCode = code))
                                     },
                                     onScanAgain = { viewModel.navigateTo(Screen.ScannerScreen(ScanMode.READ)) }
                                 )
@@ -343,8 +211,7 @@ class MainActivity : ComponentActivity() {
                                 SettingsScreen(
                                     totalRecords = uiState.totalRecords,
                                     totalUnits = uiState.totalUnits,
-                                    onBackClick = { viewModel.navigateTo(Screen.HomeScreen) },
-                                    onEraseNfcClick = { viewModel.navigateTo(Screen.ScannerScreen(ScanMode.ERASE)) }
+                                    onBackClick = { viewModel.navigateTo(Screen.HomeScreen) }
                                 )
                             }
                         }

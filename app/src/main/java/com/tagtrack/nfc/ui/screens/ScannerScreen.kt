@@ -23,9 +23,9 @@ import com.tagtrack.nfc.ui.viewmodel.ScanMode
 fun ScannerScreen(
     scanMode: ScanMode = ScanMode.READ,
     onBackClick: () -> Unit,
-    onSimulateScan: (Int) -> Unit
+    onSimulateScan: (String) -> Unit
 ) {
-    var sampleNfcInput by remember { mutableStateOf("100001") }
+    var sampleNfcInput by remember { mutableStateOf("04A224B2C16180") }
 
     Column(
         modifier = Modifier
@@ -33,16 +33,8 @@ fun ScannerScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         TagTrackHeader(
-            title = when (scanMode) {
-                ScanMode.WRITE -> "Write NFC Tag"
-                ScanMode.ERASE -> "Erase NFC Tag"
-                else -> "Scan NFC Tag"
-            },
-            subtitle = when (scanMode) {
-                ScanMode.WRITE -> "Hold tag near device to write"
-                ScanMode.ERASE -> "Hold tag near device to erase"
-                else -> "Ready to scan NFC tags"
-            },
+            title = "Scan NFC Tag",
+            subtitle = "Ready to scan read-only hardware UIDs",
             onBackClick = onBackClick
         )
 
@@ -70,10 +62,7 @@ fun ScannerScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = when (scanMode) {
-                            ScanMode.ERASE -> Icons.Rounded.DeleteSweep
-                            else -> Icons.Rounded.Nfc
-                        },
+                        imageVector = Icons.Rounded.Nfc,
                         contentDescription = null,
                         tint = BlueBronze,
                         modifier = Modifier.size(64.dp)
@@ -84,11 +73,7 @@ fun ScannerScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = when (scanMode) {
-                    ScanMode.WRITE -> "Ready to Write Tag"
-                    ScanMode.ERASE -> "Ready to Erase Tag"
-                    else -> "Listening for NFC Tag..."
-                },
+                text = "Listening for NFC Tag...",
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -99,11 +84,7 @@ fun ScannerScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = when (scanMode) {
-                    ScanMode.WRITE -> "Ensure the target NFC tag is close to the back of your device. Data will be encoded securely."
-                    ScanMode.ERASE -> "Ensure the target NFC tag is close to the back of your device to clear its data."
-                    else -> "Bring an NFC-enabled asset or tag close to your phone to view or verify its details instantly."
-                },
+                text = "Bring an NFC-enabled hardware tag close to your phone to view or verify its details instantly.",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
@@ -141,40 +122,31 @@ fun ScannerScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     )
-                    if (scanMode == ScanMode.READ) {
-                        OutlinedTextField(
-                            value = sampleNfcInput,
-                            onValueChange = { sampleNfcInput = it },
-                            label = { Text("Simulate NFC Code") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(CardCornerRadius),
-                            singleLine = true
-                        )
-                    }
+                    OutlinedTextField(
+                        value = sampleNfcInput,
+                        onValueChange = { sampleNfcInput = it },
+                        label = { Text("Simulate NFC UID (Hex)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(CardCornerRadius),
+                        singleLine = true
+                    )
                     Button(
                         onClick = {
-                            val code = sampleNfcInput.toIntOrNull() ?: 100001
-                            onSimulateScan(code)
+                            val uid = sampleNfcInput.trim().uppercase()
+                            if (uid.isNotBlank()) {
+                                onSimulateScan(uid)
+                            }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(CardCornerRadius),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Icon(
-                            imageVector = when (scanMode) {
-                                ScanMode.ERASE -> Icons.Rounded.DeleteSweep
-                                else -> Icons.Rounded.TouchApp
-                            },
+                            imageVector = Icons.Rounded.TouchApp,
                             contentDescription = null
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            when (scanMode) {
-                                ScanMode.WRITE -> "Simulate Write"
-                                ScanMode.ERASE -> "Simulate Erase"
-                                else -> "Simulate Tap"
-                            }
-                        )
+                        Text("Simulate Tap")
                     }
                 }
             }

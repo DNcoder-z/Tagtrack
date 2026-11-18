@@ -5,7 +5,7 @@ object SeedData {
         val now = System.currentTimeMillis()
         return listOf(
             Item(
-                nfcCode = 1001,
+                nfcCode = "04A224B2C16180",
                 unqCode = 5001,
                 itemName = "Classic Tuxedo Suit Set",
                 category = "Formal Wear",
@@ -21,7 +21,7 @@ object SeedData {
                 dateUpdated = null
             ),
             Item(
-                nfcCode = 1002,
+                nfcCode = "04B335C3D27290",
                 unqCode = 5002,
                 itemName = "Designer Evening Gown",
                 category = "Dresses",
@@ -37,7 +37,7 @@ object SeedData {
                 dateUpdated = now - 86400000L * 1
             ),
             Item(
-                nfcCode = 1003,
+                nfcCode = "04C446D4E383A0",
                 unqCode = 5003,
                 itemName = "Kids Superhero Costume",
                 category = "Costumes",
@@ -53,7 +53,7 @@ object SeedData {
                 dateUpdated = now - 86400000L * 2
             ),
             Item(
-                nfcCode = 1004,
+                nfcCode = "04D557E5F494B0",
                 unqCode = 5004,
                 itemName = "Leather Biker Jacket",
                 category = "Outerwear",
@@ -69,7 +69,7 @@ object SeedData {
                 dateUpdated = null
             ),
             Item(
-                nfcCode = 1005,
+                nfcCode = "04E668F605A5C0",
                 unqCode = 5005,
                 itemName = "Formal Silk Tie",
                 category = "Accessories",
