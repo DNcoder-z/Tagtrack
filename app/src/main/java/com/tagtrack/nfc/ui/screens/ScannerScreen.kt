@@ -84,7 +84,7 @@ fun ScannerScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Bring an NFC-enabled hardware tag close to your phone to view or verify its details instantly.",
+                text = "Bring an NFC tag close to your phone to view item or verify its details.",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 ),

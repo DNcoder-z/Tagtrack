@@ -1,20 +1,32 @@
 package com.tagtrack.nfc.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.tagtrack.nfc.data.Item
 import com.tagtrack.nfc.ui.components.BadgeType
@@ -57,6 +69,98 @@ fun ItemDetailsScreen(
         return
     }
 
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showImageViewer by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = { Text("Delete Item?") },
+            text = { Text("Are you sure you want to permanently delete this item? This action cannot be undone.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteConfirmation = false
+                        onDeleteClick(item)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.onError)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteConfirmation = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showImageViewer && !item.photoUri.isNullOrBlank()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .zIndex(100f)
+        ) {
+            var scale by remember { mutableFloatStateOf(1f) }
+            var offset by remember { mutableStateOf(Offset.Zero) }
+            val transformState = rememberTransformableState { zoomChange, offsetChange, _ ->
+                scale = (scale * zoomChange).coerceIn(1f, 5f)
+                offset += offsetChange
+            }
+
+            BackHandler {
+                showImageViewer = false
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onDoubleTap = {
+                                scale = if (scale > 1f) 1f else 2.5f
+                                offset = Offset.Zero
+                            }
+                        )
+                    }
+                    .transformable(transformState),
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = item.photoUri,
+                    contentDescription = item.itemName,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer(
+                            scaleX = scale,
+                            scaleY = scale,
+                            translationX = offset.x,
+                            translationY = offset.y
+                        ),
+                    contentScale = ContentScale.Fit
+                )
+            }
+
+            IconButton(
+                onClick = { showImageViewer = false },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+                    .background(Color.Black.copy(alpha = 0.6f), shape = CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Close,
+                    contentDescription = "Close",
+                    tint = Color.White
+                )
+            }
+        }
+    }
+
     val dateFormat = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
     val dateAddedStr = dateFormat.format(Date(item.dateAdded))
     val dateUpdatedStr = item.dateUpdated?.let { dateFormat.format(Date(it)) }
@@ -78,7 +182,7 @@ fun ItemDetailsScreen(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
-                IconButton(onClick = { onDeleteClick(item) }) {
+                IconButton(onClick = { showDeleteConfirmation = true }) {
                     Icon(
                         imageVector = Icons.Rounded.Delete,
                         contentDescription = "Delete",
@@ -113,7 +217,14 @@ fun ItemDetailsScreen(
                         modifier = Modifier
                             .size(90.dp)
                             .clip(RoundedCornerShape(CardCornerRadius))
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .let {
+                                if (!item.photoUri.isNullOrBlank()) {
+                                    it.clickable { showImageViewer = true }
+                                } else {
+                                    it
+                                }
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         if (!item.photoUri.isNullOrBlank()) {

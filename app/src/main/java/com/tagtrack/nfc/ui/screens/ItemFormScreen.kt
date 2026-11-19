@@ -64,6 +64,40 @@ fun ItemFormScreen(
     var errorMessage by remember { mutableStateOf("") }
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
     var showPermissionExplanation by remember { mutableStateOf(false) }
+    var showUpdateConfirmation by remember { mutableStateOf(false) }
+    var pendingItemToSave by remember { mutableStateOf<Item?>(null) }
+
+    if (showUpdateConfirmation && pendingItemToSave != null) {
+        AlertDialog(
+            onDismissRequest = { showUpdateConfirmation = false },
+            title = { Text("Confirm Item Update") },
+            text = { Text("This item will be updated, and its existing data will be overwritten with your new changes. Are you sure you want to continue?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val itemToSave = pendingItemToSave
+                        showUpdateConfirmation = false
+                        pendingItemToSave = null
+                        if (itemToSave != null) {
+                            onSaveItem(itemToSave)
+                        }
+                    }
+                ) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showUpdateConfirmation = false
+                        pendingItemToSave = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -580,7 +614,12 @@ fun ItemFormScreen(
                         dateAdded = itemToEdit?.dateAdded ?: currentTime,
                         dateUpdated = if (isEditing) currentTime else null
                     )
-                    onSaveItem(finalItem)
+                    if (isEditing) {
+                        pendingItemToSave = finalItem
+                        showUpdateConfirmation = true
+                    } else {
+                        onSaveItem(finalItem)
+                    }
                 },
                 enabled = isFormValid,
                 modifier = Modifier

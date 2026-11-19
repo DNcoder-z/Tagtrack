@@ -36,6 +36,8 @@ data class TagTrackUiState(
     val currentScreen: Screen = Screen.HomeScreen,
     val inventoryItems: List<Item> = emptyList(),
     val searchQuery: String = "",
+    val selectedCategory: String = "All Categories",
+    val availableCategories: List<String> = listOf("All Categories"),
     val filteredItems: List<Item> = emptyList(),
     val selectedItem: Item? = null,
     val scanMode: ScanMode = ScanMode.IDLE,
@@ -59,9 +61,11 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
         viewModelScope.launch {
             repository.allItems.collect { items ->
                 _uiState.update { state ->
-                    val filtered = filterItems(items, state.searchQuery)
+                    val categories = listOf("All Categories") + items.map { it.category }.distinct().sorted()
+                    val filtered = filterItems(items, state.searchQuery, state.selectedCategory)
                     state.copy(
                         inventoryItems = items,
+                        availableCategories = categories,
                         filteredItems = filtered,
                         totalRecords = items.size,
                         totalUnits = items.sumOf { it.unitQuantity }
@@ -71,10 +75,15 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
         }
     }
 
-    private fun filterItems(items: List<Item>, query: String): List<Item> {
-        if (query.isBlank()) return items
+    private fun filterItems(items: List<Item>, query: String, category: String): List<Item> {
+        val categoryFiltered = if (category == "All Categories" || category.isBlank()) {
+            items
+        } else {
+            items.filter { it.category.equals(category, ignoreCase = true) }
+        }
+        if (query.isBlank()) return categoryFiltered
         val trimmed = query.trim().lowercase()
-        return items.filter { item ->
+        return categoryFiltered.filter { item ->
             item.itemName.lowercase().contains(trimmed) ||
                     item.category.lowercase().contains(trimmed) ||
                     item.nfcCode.lowercase().contains(trimmed) ||
@@ -98,8 +107,15 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
 
     fun updateSearchQuery(query: String) {
         _uiState.update { state ->
-            val filtered = filterItems(state.inventoryItems, query)
+            val filtered = filterItems(state.inventoryItems, query, state.selectedCategory)
             state.copy(searchQuery = query, filteredItems = filtered)
+        }
+    }
+
+    fun updateSelectedCategory(category: String) {
+        _uiState.update { state ->
+            val filtered = filterItems(state.inventoryItems, state.searchQuery, category)
+            state.copy(selectedCategory = category, filteredItems = filtered)
         }
     }
 

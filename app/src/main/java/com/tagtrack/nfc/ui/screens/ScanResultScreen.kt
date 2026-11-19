@@ -34,7 +34,6 @@ fun ScanResultScreen(
     ) {
         TagTrackHeader(
             title = "Scan Result",
-            subtitle = "NFC UID: $scannedNfcCode",
             onBackClick = onBackClick
         )
 
@@ -113,7 +112,7 @@ fun ScanResultScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Unregistered NFC Tag",
+                    text = "Unregistered Item Tag",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -121,7 +120,7 @@ fun ScanResultScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Tag UID $scannedNfcCode is not yet registered in the TagTrack database.",
+                    text = "Tag UID is not yet registered in the TagTrack database.",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     ),
@@ -134,13 +133,13 @@ fun ScanResultScreen(
                     onClick = { onRegisterItem(scannedNfcCode) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp),
+                        .height(70.dp),
                     shape = RoundedCornerShape(CardCornerRadius),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Icon(Icons.Rounded.Add, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Register Asset with this Tag", fontWeight = FontWeight.Bold)
+                    Text("Register Item with this Tag", fontWeight = FontWeight.Bold)
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))

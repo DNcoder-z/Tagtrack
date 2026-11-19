@@ -156,6 +156,9 @@ class MainActivity : ComponentActivity() {
                                 InventoryScreen(
                                     items = uiState.filteredItems,
                                     searchQuery = uiState.searchQuery,
+                                    selectedCategory = uiState.selectedCategory,
+                                    availableCategories = uiState.availableCategories,
+                                    onCategorySelected = { viewModel.updateSelectedCategory(it) },
                                     onSearchQueryChanged = { viewModel.updateSearchQuery(it) },
                                     onItemClick = { item -> viewModel.navigateTo(Screen.ItemDetailsScreen(item.nfcCode)) },
                                     onAddItemClick = { viewModel.navigateTo(Screen.ItemFormScreen(isEditing = false)) },

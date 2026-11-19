@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -19,10 +19,14 @@ import com.tagtrack.nfc.ui.components.ItemTile
 import com.tagtrack.nfc.ui.components.TagTrackHeader
 import com.tagtrack.nfc.ui.theme.CardCornerRadius
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InventoryScreen(
     items: List<Item>,
     searchQuery: String,
+    selectedCategory: String,
+    availableCategories: List<String>,
+    onCategorySelected: (String) -> Unit,
     onSearchQueryChanged: (String) -> Unit,
     onItemClick: (Item) -> Unit,
     onAddItemClick: () -> Unit,
@@ -52,13 +56,6 @@ fun InventoryScreen(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
-//                IconButton(onClick = onAddItemClick) {
-//                    Icon(
-//                        imageVector = Icons.Rounded.Add,
-//                        contentDescription = "Add Item",
-//                        tint = MaterialTheme.colorScheme.primary
-//                    )
-//                }
             }
         )
 
@@ -102,6 +99,49 @@ fun InventoryScreen(
                 ),
                 singleLine = true
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Category Filter Dropdown
+            var categoryExpanded by remember { mutableStateOf(false) }
+            ExposedDropdownMenuBox(
+                expanded = categoryExpanded,
+                onExpandedChange = { categoryExpanded = it },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = selectedCategory,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Filter by Category") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
+                    shape = RoundedCornerShape(CardCornerRadius),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    singleLine = true
+                )
+                ExposedDropdownMenu(
+                    expanded = categoryExpanded,
+                    onDismissRequest = { categoryExpanded = false }
+                ) {
+                    availableCategories.forEach { category ->
+                        DropdownMenuItem(
+                            text = { Text(category) },
+                            onClick = {
+                                onCategorySelected(category)
+                                categoryExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 

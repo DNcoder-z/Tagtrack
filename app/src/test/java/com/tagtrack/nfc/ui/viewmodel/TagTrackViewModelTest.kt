@@ -130,6 +130,39 @@ class TagTrackViewModelTest {
     }
 
     @Test
+    fun testCategoryFiltering() = runTest {
+        val item1 = Item(
+            nfcCode = "04A1", unqCode = 1, itemName = "Jacket", category = "Outerwear",
+            ageGroup = "Adult", size = "L", color = "Black", condition = "New",
+            status = "Available", unitQuantity = 1, storageLocation = "Rack 1",
+            description = "Desc", photoUri = "content://dummy/photo1.jpg", dateAdded = 100L, dateUpdated = null
+        )
+        val item2 = Item(
+            nfcCode = "04A2", unqCode = 2, itemName = "Shirt", category = "Tops",
+            ageGroup = "Adult", size = "M", color = "White", condition = "New",
+            status = "Available", unitQuantity = 1, storageLocation = "Rack 2",
+            description = "Desc", photoUri = "content://dummy/photo2.jpg", dateAdded = 200L, dateUpdated = null
+        )
+
+        viewModel.insertItem(item1)
+        viewModel.insertItem(item2)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(2, viewModel.uiState.value.filteredItems.size)
+
+        viewModel.updateSelectedCategory("Outerwear")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.filteredItems.size)
+        assertEquals("Jacket", viewModel.uiState.value.filteredItems[0].itemName)
+
+        viewModel.updateSelectedCategory("All Categories")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(2, viewModel.uiState.value.filteredItems.size)
+    }
+
+    @Test
     fun testMergeSimilarItems() = runTest {
         val item1 = Item(
             nfcCode = "04A1", unqCode = 1, itemName = "Blue Jeans", category = "Apparel",
