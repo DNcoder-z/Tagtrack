@@ -37,6 +37,8 @@ data class TagTrackUiState(
     val inventoryItems: List<Item> = emptyList(),
     val searchQuery: String = "",
     val selectedCategory: String = "All Categories",
+    val selectedStatus: String = "All",
+    val selectedCondition: String = "All", // BAGONG DAGDAG
     val availableCategories: List<String> = listOf("All Categories"),
     val filteredItems: List<Item> = emptyList(),
     val selectedItem: Item? = null,
@@ -61,8 +63,11 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
         viewModelScope.launch {
             repository.allItems.collect { items ->
                 _uiState.update { state ->
-                    val categories = listOf("All Categories") + items.map { it.category }.distinct().sorted()
-                    val filtered = filterItems(items, state.searchQuery, state.selectedCategory)
+                    val filtered = filterItems(items, state.searchQuery, state.selectedCategory, state.selectedStatus, state.selectedCondition)
+                    // BAGONG LOGIC: Kukunin lang ang categories na may items na pasok sa filter
+                    val categoriesFromFiltered = filtered.map { it.category }.distinct().sorted()
+                    val categories = listOf("All Categories") + categoriesFromFiltered
+
                     state.copy(
                         inventoryItems = items,
                         availableCategories = categories,
@@ -75,15 +80,41 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
         }
     }
 
-    private fun filterItems(items: List<Item>, query: String, category: String): List<Item> {
+    // BINAGO: Dinagdagan ng condition parameter
+    private fun filterItems(items: List<Item>, query: String, category: String, status: String, condition: String): List<Item> {
+        // 1. Filter by Category
         val categoryFiltered = if (category == "All Categories" || category.isBlank()) {
             items
         } else {
             items.filter { it.category.equals(category, ignoreCase = true) }
         }
-        if (query.isBlank()) return categoryFiltered
+
+        // 2. Filter by Status
+        val statusFiltered = if (status == "All" || status.isBlank()) {
+            categoryFiltered
+        } else {
+            categoryFiltered.filter { it.status.equals(status, ignoreCase = true) }
+        }
+
+        // 3. Filter by Condition (BAGONG DAGDAG)
+        val conditionFiltered = if (condition == "All" || condition.isBlank()) {
+            statusFiltered
+        } else {
+            if (condition == "Attention Required") {
+                statusFiltered.filter {
+                    it.condition.equals("Needs Cleaning", true) ||
+                            it.condition.equals("Damaged", true) ||
+                            it.condition.equals("Poor", true)
+                }
+            } else {
+                statusFiltered.filter { it.condition.equals(condition, ignoreCase = true) }
+            }
+        }
+
+        // 4. Filter by Search Query
+        if (query.isBlank()) return conditionFiltered
         val trimmed = query.trim().lowercase()
-        return categoryFiltered.filter { item ->
+        return conditionFiltered.filter { item ->
             item.itemName.lowercase().contains(trimmed) ||
                     item.category.lowercase().contains(trimmed) ||
                     item.nfcCode.lowercase().contains(trimmed) ||
@@ -107,15 +138,58 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
 
     fun updateSearchQuery(query: String) {
         _uiState.update { state ->
-            val filtered = filterItems(state.inventoryItems, query, state.selectedCategory)
-            state.copy(searchQuery = query, filteredItems = filtered)
+            val filtered = filterItems(state.inventoryItems, query, state.selectedCategory, state.selectedStatus, state.selectedCondition)
+            val categoriesFromFiltered = filtered.map { it.category }.distinct().sorted()
+            val categories = listOf("All Categories") + categoriesFromFiltered
+
+            state.copy(
+                searchQuery = query,
+                filteredItems = filtered,
+                availableCategories = categories
+            )
         }
     }
 
     fun updateSelectedCategory(category: String) {
         _uiState.update { state ->
-            val filtered = filterItems(state.inventoryItems, state.searchQuery, category)
-            state.copy(selectedCategory = category, filteredItems = filtered)
+            val filtered = filterItems(state.inventoryItems, state.searchQuery, category, state.selectedStatus, state.selectedCondition)
+            val categoriesFromFiltered = filtered.map { it.category }.distinct().sorted()
+            val categories = listOf("All Categories") + categoriesFromFiltered
+
+            state.copy(
+                selectedCategory = category,
+                filteredItems = filtered,
+                availableCategories = categories
+            )
+        }
+    }
+
+    fun updateSelectedStatus(status: String) {
+        _uiState.update { state ->
+            val filtered = filterItems(state.inventoryItems, state.searchQuery, state.selectedCategory, status, state.selectedCondition)
+            val categoriesFromFiltered = filtered.map { it.category }.distinct().sorted()
+            val categories = listOf("All Categories") + categoriesFromFiltered
+
+            state.copy(
+                selectedStatus = status,
+                filteredItems = filtered,
+                availableCategories = categories
+            )
+        }
+    }
+
+    // BAGONG FUNCTION: Para sa Condition filter
+    fun updateSelectedCondition(condition: String) {
+        _uiState.update { state ->
+            val filtered = filterItems(state.inventoryItems, state.searchQuery, state.selectedCategory, state.selectedStatus, condition)
+            val categoriesFromFiltered = filtered.map { it.category }.distinct().sorted()
+            val categories = listOf("All Categories") + categoriesFromFiltered
+
+            state.copy(
+                selectedCondition = condition,
+                filteredItems = filtered,
+                availableCategories = categories
+            )
         }
     }
 
@@ -271,38 +345,38 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
             _uiState.update { it.copy(isBusy = true) }
             try {
                 val currentItems = _uiState.value.inventoryItems
-                val grouped = currentItems.groupBy { 
-                    Pair(it.itemName.trim().lowercase(), it.category.trim().lowercase()) 
+                val grouped = currentItems.groupBy {
+                    Pair(it.itemName.trim().lowercase(), it.category.trim().lowercase())
                 }
-                
+
                 var removedCount = 0
                 for ((_, group) in grouped) {
                     if (group.size > 1) {
                         val sortedGroup = group.sortedWith(compareBy({ it.nfcCode }, { it.dateAdded }))
                         val primary = sortedGroup.first()
                         val duplicates = sortedGroup.drop(1)
-                        
+
                         val totalQty = group.sumOf { it.unitQuantity }
                         val updatedPrimary = primary.copy(
                             unitQuantity = totalQty,
                             dateUpdated = System.currentTimeMillis()
                         )
-                        
+
                         repository.updateItem(updatedPrimary)
-                        
+
                         for (dup in duplicates) {
                             repository.deleteItem(dup)
                             removedCount++
                         }
                     }
                 }
-                
+
                 val message = if (removedCount > 0) {
                     "Successfully merged $removedCount duplicate items."
                 } else {
                     "No duplicate items found to merge."
                 }
-                
+
                 _uiState.update {
                     it.copy(
                         snackbarMessage = message,

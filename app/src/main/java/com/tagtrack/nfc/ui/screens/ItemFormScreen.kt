@@ -20,17 +20,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.tagtrack.nfc.data.Item
 import com.tagtrack.nfc.ui.components.TagTrackHeader
 import com.tagtrack.nfc.ui.theme.BlueBronze
 import com.tagtrack.nfc.ui.theme.CardCornerRadius
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import com.tagtrack.nfc.util.ImageStorageManager
 import java.io.File
 
@@ -310,11 +311,11 @@ fun ItemFormScreen(
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.Top
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(72.dp)
+                                .size(80.dp)
                                 .clip(RoundedCornerShape(CardCornerRadius))
                                 .background(MaterialTheme.colorScheme.surfaceVariant),
                             contentAlignment = Alignment.Center
@@ -349,18 +350,21 @@ fun ItemFormScreen(
                                 singleLine = true,
                                 isError = photoUri.isBlank()
                             )
+
+                            // Binago ko ang layout ng buttons para maging maayos
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 OutlinedButton(
                                     onClick = { imagePickerLauncher.launch("image/*") },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(CardCornerRadius)
+                                    modifier = Modifier.weight(1f).height(40.dp),
+                                    shape = RoundedCornerShape(CardCornerRadius),
+                                    contentPadding = PaddingValues(horizontal = 4.dp)
                                 ) {
-                                    Icon(Icons.Rounded.PhotoLibrary, contentDescription = null)
+                                    Icon(Icons.Rounded.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Gallery")
+                                    Text("Gallery", maxLines = 1, style = MaterialTheme.typography.labelMedium)
                                 }
                                 OutlinedButton(
                                     onClick = {
@@ -387,12 +391,13 @@ fun ItemFormScreen(
                                             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                                         }
                                     },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(CardCornerRadius)
+                                    modifier = Modifier.weight(1f).height(40.dp),
+                                    shape = RoundedCornerShape(CardCornerRadius),
+                                    contentPadding = PaddingValues(horizontal = 4.dp)
                                 ) {
-                                    Icon(Icons.Rounded.PhotoCamera, contentDescription = null)
+                                    Icon(Icons.Rounded.PhotoCamera, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Take Photo")
+                                    Text("Camera", maxLines = 1, style = MaterialTheme.typography.labelMedium)
                                 }
                             }
                         }
@@ -413,28 +418,29 @@ fun ItemFormScreen(
                         onSelected = { category = it }
                     )
 
-                    Row(
+                    // Inayos ang layout ng Color at Quantity
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         OutlinedTextField(
                             value = color,
                             onValueChange = { color = it },
                             label = { Text("Color / Tone") },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(CardCornerRadius),
                             singleLine = true
                         )
 
                         val currentQty = unitQuantityStr.toIntOrNull() ?: 0
                         Column(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                horizontalArrangement = Arrangement.Center
                             ) {
                                 FilledTonalIconButton(
                                     onClick = {
@@ -450,6 +456,8 @@ fun ItemFormScreen(
                                     Icon(Icons.Rounded.Remove, contentDescription = "Decrease Quantity")
                                 }
 
+                                Spacer(modifier = Modifier.width(12.dp))
+
                                 OutlinedTextField(
                                     value = unitQuantityStr,
                                     onValueChange = { newValue ->
@@ -457,13 +465,16 @@ fun ItemFormScreen(
                                             unitQuantityStr = newValue
                                         }
                                     },
-                                    label = { Text("Quantity *") },
-                                    modifier = Modifier.weight(1f),
+                                    label = { Text("Qty *", textAlign = TextAlign.Center) },
+                                    modifier = Modifier.width(100.dp),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     shape = RoundedCornerShape(CardCornerRadius),
                                     singleLine = true,
-                                    isError = currentQty < 1
+                                    isError = currentQty < 1,
+                                    textStyle = androidx.compose.ui.text.TextStyle(textAlign = TextAlign.Center)
                                 )
+
+                                Spacer(modifier = Modifier.width(12.dp))
 
                                 FilledTonalIconButton(
                                     onClick = {
@@ -481,7 +492,8 @@ fun ItemFormScreen(
                                     text = "Minimum quantity is 1",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.padding(start = 4.dp)
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Center
                                 )
                             }
                         }
@@ -561,10 +573,10 @@ fun ItemFormScreen(
             // Save Button
             val qty = unitQuantityStr.toIntOrNull() ?: 0
             val isFormValid = itemName.isNotBlank() &&
-                              nfcCodeStr.isNotBlank() &&
-                              (unqCodeStr.toIntOrNull() ?: 0) > 0 &&
-                              qty >= 1 &&
-                              photoUri.isNotBlank()
+                    nfcCodeStr.isNotBlank() &&
+                    (unqCodeStr.toIntOrNull() ?: 0) > 0 &&
+                    qty >= 1 &&
+                    photoUri.isNotBlank()
 
             Button(
                 onClick = {

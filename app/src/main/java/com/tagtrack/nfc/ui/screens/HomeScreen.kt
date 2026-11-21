@@ -31,7 +31,7 @@ fun HomeScreen(
     totalUnits: Int,
     totalRecords: Int,
     inventoryItems: List<Item>,
-    onNavigateToInventory: () -> Unit,
+    onNavigateToInventory: (String) -> Unit, // Tumatanggap ng String (status o condition)
     onNavigateToScanner: () -> Unit,
     onNavigateToForm: () -> Unit,
     onItemClick: (Item) -> Unit
@@ -73,7 +73,7 @@ fun HomeScreen(
                 .weight(1f),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            // Summary Stats Card
+            // 1. SUMMARY STATS CARD
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -81,34 +81,33 @@ fun HomeScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceAround
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        StatItem(
-                            label = "Total Units",
-                            value = totalUnits.toString(),
-                            icon = Icons.Rounded.Inventory2
+                        Text(
+                            text = totalUnits.toString(),
+                            style = MaterialTheme.typography.displayMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         )
-                        HorizontalDivider(
-                            modifier = Modifier
-                                .height(40.dp)
-                                .width(1.dp),
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                        StatItem(
-                            label = "Unique Records",
-                            value = totalRecords.toString(),
-                            icon = Icons.Rounded.Category
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Total Units",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         )
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Status Tiles Grid
+            // 2. ASSET STATUS OVERVIEW
             item {
                 Text(
                     text = "Asset Status Overview",
@@ -128,7 +127,7 @@ fun HomeScreen(
                         count = availableCount,
                         color = Green,
                         icon = Icons.Rounded.CheckCircle,
-                        onClick = onNavigateToInventory
+                        onClick = { onNavigateToInventory("Available") }
                     )
                     StatusTile(
                         modifier = Modifier.weight(1f),
@@ -136,7 +135,7 @@ fun HomeScreen(
                         count = rentedCount,
                         color = Amber,
                         icon = Icons.Rounded.Schedule,
-                        onClick = onNavigateToInventory
+                        onClick = { onNavigateToInventory("Rented") }
                     )
                     StatusTile(
                         modifier = Modifier.weight(1f),
@@ -144,13 +143,13 @@ fun HomeScreen(
                         count = unavailableCount,
                         color = Red,
                         icon = Icons.Rounded.Block,
-                        onClick = onNavigateToInventory
+                        onClick = { onNavigateToInventory("Unavailable") }
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Attention Card (if any items need cleaning/repair)
+            // 3. ATTENTION CARD
             if (attentionItems.isNotEmpty()) {
                 item {
                     Card(
@@ -190,7 +189,7 @@ fun HomeScreen(
                                 )
                             }
                             Button(
-                                onClick = onNavigateToInventory,
+                                onClick = { onNavigateToInventory("Attention Required") }, // BINAGO
                                 colors = ButtonDefaults.buttonColors(containerColor = Red),
                                 shape = RoundedCornerShape(ButtonCornerRadius),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
@@ -203,44 +202,7 @@ fun HomeScreen(
                 }
             }
 
-            // Quick Actions
-            item {
-                Text(
-                    text = "Quick Actions",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Button(
-                        onClick = onNavigateToScanner,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(CardCornerRadius),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) {
-                        Icon(Icons.Rounded.Nfc, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Scan NFC")
-                    }
-                    OutlinedButton(
-                        onClick = onNavigateToScanner,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(CardCornerRadius)
-                    ) {
-                        Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Add Item")
-                    }
-                }
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-
-            // Recent Activity Section Header
+            // 4. RECENT ACTIVITY SECTION HEADER
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -254,14 +216,14 @@ fun HomeScreen(
                             color = MaterialTheme.colorScheme.onBackground
                         )
                     )
-                    TextButton(onClick = onNavigateToInventory) {
+                    TextButton(onClick = { onNavigateToInventory("") }) { // Walang filter
                         Text("See All", color = MaterialTheme.colorScheme.primary)
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // Recent Items List
+            // 5. RECENT ITEMS LIST
             if (recentItems.isEmpty()) {
                 item {
                     Box(
@@ -290,32 +252,6 @@ fun HomeScreen(
 }
 
 @Composable
-fun StatItem(label: String, value: String, icon: ImageVector) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall.copy(
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        )
-    }
-}
-
-@Composable
 fun StatusTile(
     modifier: Modifier = Modifier,
     title: String,
@@ -334,39 +270,36 @@ fun StatusTile(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            horizontalAlignment = Alignment.Start
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(color.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = color,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(BadgeCornerRadius))
-                        .background(color.copy(alpha = 0.15f))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = count.toString(),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = color
-                        )
-                    )
-                }
             }
             Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = count.toString(),
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            )
+
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )

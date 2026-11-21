@@ -126,7 +126,16 @@ class MainActivity : ComponentActivity() {
                                 onTabSelected = { tab ->
                                     when (tab) {
                                         BottomNavTab.HOME -> viewModel.navigateTo(Screen.HomeScreen)
-                                        BottomNavTab.INVENTORY -> viewModel.navigateTo(Screen.InventoryScreen)
+
+                                        // I-reset ang filters bago pumunta sa Inventory
+                                        BottomNavTab.INVENTORY -> {
+                                            viewModel.updateSelectedStatus("All")
+                                            viewModel.updateSelectedCategory("All Categories")
+                                            viewModel.updateSelectedCondition("All") // BAGONG DAGDAG
+                                            viewModel.updateSearchQuery("")
+                                            viewModel.navigateTo(Screen.InventoryScreen)
+                                        }
+
                                         BottomNavTab.SCANNER -> viewModel.navigateTo(Screen.ScannerScreen(ScanMode.READ))
                                         BottomNavTab.SETTINGS -> viewModel.navigateTo(Screen.SettingsScreen)
                                     }
@@ -146,7 +155,29 @@ class MainActivity : ComponentActivity() {
                                     totalUnits = uiState.totalUnits,
                                     totalRecords = uiState.totalRecords,
                                     inventoryItems = uiState.inventoryItems,
-                                    onNavigateToInventory = { viewModel.navigateTo(Screen.InventoryScreen) },
+                                    onNavigateToInventory = { filterType ->
+                                        // 1. I-reset muna lahat ng filters
+                                        viewModel.updateSelectedCategory("All Categories")
+                                        viewModel.updateSelectedStatus("All")
+                                        viewModel.updateSelectedCondition("All")
+                                        viewModel.updateSearchQuery("")
+
+                                        // 2. I-set ang tamang filter base sa pinindot
+                                        when (filterType) {
+                                            "Available", "Rented", "Unavailable" -> {
+                                                viewModel.updateSelectedStatus(filterType)
+                                            }
+                                            "Attention Required" -> {
+                                                viewModel.updateSelectedCondition("Attention Required")
+                                            }
+                                            else -> {
+                                                // "See All" - walang filter
+                                            }
+                                        }
+
+                                        // 3. Lumipat sa Inventory Screen
+                                        viewModel.navigateTo(Screen.InventoryScreen)
+                                    },
                                     onNavigateToScanner = { viewModel.navigateTo(Screen.ScannerScreen(ScanMode.READ)) },
                                     onNavigateToForm = { viewModel.navigateTo(Screen.ItemFormScreen(isEditing = false)) },
                                     onItemClick = { item -> viewModel.navigateTo(Screen.ItemDetailsScreen(item.nfcCode)) }

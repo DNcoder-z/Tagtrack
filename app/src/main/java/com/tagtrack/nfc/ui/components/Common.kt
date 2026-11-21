@@ -206,8 +206,9 @@ fun ItemCard(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
+                // BINAGO: Tinanggal ang "NFC #${item.nfcCode}" para malinis tignan
                 Text(
-                    text = "${item.category} • Unq #${item.unqCode} • NFC #${item.nfcCode}",
+                    text = item.category,
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     ),
@@ -333,16 +334,6 @@ fun ItemTile(
                         color = MaterialTheme.colorScheme.onSurface
                     ),
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "Unq #${item.unqCode}",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 11.sp
-                    ),
-                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }

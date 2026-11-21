@@ -2,9 +2,11 @@ package com.tagtrack.nfc.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items // Idinagdag para sa LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
@@ -49,10 +51,10 @@ fun InventoryScreen(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
-                IconButton(onClick = onNavigateToScanner) {
+                IconButton(onClick = onAddItemClick) {
                     Icon(
                         imageVector = Icons.Rounded.Add,
-                        contentDescription = "Add Item ",
+                        contentDescription = "Add Item",
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -66,6 +68,7 @@ fun InventoryScreen(
                 .padding(horizontal = 16.dp)
         ) {
             Spacer(modifier = Modifier.height(12.dp))
+
             // Search Bar
             OutlinedTextField(
                 value = searchQuery,
@@ -102,49 +105,24 @@ fun InventoryScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Category Filter Dropdown
-            var categoryExpanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
-                expanded = categoryExpanded,
-                onExpandedChange = { categoryExpanded = it },
+            // CAROUSEL FILTER
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                OutlinedTextField(
-                    value = selectedCategory,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Filter by Category") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
-                    shape = RoundedCornerShape(CardCornerRadius),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    singleLine = true
-                )
-                ExposedDropdownMenu(
-                    expanded = categoryExpanded,
-                    onDismissRequest = { categoryExpanded = false }
-                ) {
-                    availableCategories.forEach { category ->
-                        DropdownMenuItem(
-                            text = { Text(category) },
-                            onClick = {
-                                onCategorySelected(category)
-                                categoryExpanded = false
-                            }
-                        )
-                    }
+                items(availableCategories) { category ->
+                    FilterChip(
+                        selected = selectedCategory == category,
+                        onClick = { onCategorySelected(category) },
+                        label = { Text(category) },
+                        shape = RoundedCornerShape(50)
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Listahan ng Items
             if (items.isEmpty()) {
                 Box(
                     modifier = Modifier
