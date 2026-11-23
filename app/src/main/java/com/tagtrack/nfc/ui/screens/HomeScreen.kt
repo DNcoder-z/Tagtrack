@@ -59,7 +59,7 @@ fun HomeScreen(
             actions = {
                 IconButton(onClick = onNavigateToScanner) {
                     Icon(
-                        imageVector = Icons.Rounded.Nfc,
+                        imageVector = Icons.Rounded.Add,
                         contentDescription = "Scan NFC",
                         tint = MaterialTheme.colorScheme.primary
                     )

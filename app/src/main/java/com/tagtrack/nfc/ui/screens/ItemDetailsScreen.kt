@@ -172,7 +172,7 @@ fun ItemDetailsScreen(
     ) {
         TagTrackHeader(
             title = item.itemName,
-            subtitle = "Unq #${item.unqCode} • NFC: ${item.nfcCode}",
+            subtitle = "NFC: ${item.nfcCode}",
             onBackClick = onBackClick,
             actions = {
                 IconButton(onClick = { onEditClick(item) }) {
@@ -215,7 +215,7 @@ fun ItemDetailsScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(90.dp)
+                            .size(300.dp)
                             .clip(RoundedCornerShape(CardCornerRadius))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                             .let {
@@ -254,14 +254,14 @@ fun ItemDetailsScreen(
                         )
                     )
 
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Text(
-                        text = item.category,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    )
+//                    Spacer(modifier = Modifier.height(4.dp))
+//
+//                    Text(
+//                        text = item.category,
+//                        style = MaterialTheme.typography.bodyMedium.copy(
+//                            color = MaterialTheme.colorScheme.onSurfaceVariant
+//                        )
+//                    )
 
                     Spacer(modifier = Modifier.height(12.dp))
 

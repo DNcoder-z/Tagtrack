@@ -24,23 +24,23 @@ abstract class AppDatabase : RoomDatabase() {
                     "tagtrack.db"
                 )
                     .fallbackToDestructiveMigration(true)
-                    .addCallback(DatabaseCallback())
+//                    .addCallback(DatabaseCallback())
                     .build()
                 INSTANCE = instance
                 instance
             }
         }
 
-        private class DatabaseCallback : RoomDatabase.Callback() {
-            override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                super.onCreate(db)
-                INSTANCE?.let { database ->
-                    CoroutineScope(Dispatchers.IO).launch {
-                        val dao = database.itemDao()
-                        dao.insertItems(SeedData.getSampleItems())
-                    }
-                }
-            }
-        }
+//        private class DatabaseCallback : RoomDatabase.Callback() {
+//            override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+//                super.onCreate(db)
+//                INSTANCE?.let { database ->
+//                    CoroutineScope(Dispatchers.IO).launch {
+//                        val dao = database.itemDao()
+//                        dao.insertItems(SeedData.getSampleItems())
+//                    }
+//                }
+//            }
+//        }
     }
 }

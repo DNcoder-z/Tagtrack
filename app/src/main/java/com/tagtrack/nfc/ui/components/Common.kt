@@ -93,13 +93,13 @@ fun StatusBadge(
 ) {
     val (bgColor, textColor) = when (type) {
         BadgeType.STATUS -> when (text.lowercase()) {
-            "available" -> Green.copy(alpha = 0.15f) to Green
+            "available" -> Muted.copy(alpha = 0.15f) to Muted
             "rented" -> Amber.copy(alpha = 0.15f) to Amber
             "unavailable", "damaged", "maintenance" -> Red.copy(alpha = 0.15f) to Red
             else -> BlueBronze.copy(alpha = 0.15f) to BlueBronze
         }
         BadgeType.CONDITION -> when (text.lowercase()) {
-            "new", "excellent", "good" -> Green.copy(alpha = 0.15f) to Green
+            "new", "excellent", "good" -> Muted.copy(alpha = 0.15f) to Muted
             "fair", "needs cleaning" -> Amber.copy(alpha = 0.15f) to Amber
             "poor", "damaged", "needs repair" -> Red.copy(alpha = 0.15f) to Red
             else -> BlueBronze.copy(alpha = 0.15f) to BlueBronze

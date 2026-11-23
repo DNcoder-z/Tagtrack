@@ -51,7 +51,7 @@ fun InventoryScreen(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
-                IconButton(onClick = onAddItemClick) {
+                IconButton(onClick = onNavigateToScanner) {
                     Icon(
                         imageVector = Icons.Rounded.Add,
                         contentDescription = "Add Item",

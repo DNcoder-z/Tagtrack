@@ -194,7 +194,7 @@ fun ItemFormScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         TagTrackHeader(
-            title = if (isEditing) "Edit Item #${itemToEdit?.unqCode}" else "Add New Item",
+            title = if (isEditing) "Edit Item " else "Add New Item",
             subtitle = if (isEditing) "Update asset information" else "Register a new asset",
             onBackClick = onBackClick
         )
@@ -308,14 +308,15 @@ fun ItemFormScreen(
 
                     // Photo & Media Section
                     Text("Item Photo *", style = MaterialTheme.typography.labelMedium)
-                    Row(
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.Top
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(80.dp)
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
                                 .clip(RoundedCornerShape(CardCornerRadius))
                                 .background(MaterialTheme.colorScheme.surfaceVariant),
                             contentAlignment = Alignment.Center
@@ -337,80 +338,56 @@ fun ItemFormScreen(
                             }
                         }
 
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        // Buttons sa ibaba ng photo
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            OutlinedTextField(
-                                value = photoUri,
-                                onValueChange = { photoUri = it },
-                                label = { Text("Photo Path or URL *") },
-                                modifier = Modifier.fillMaxWidth(),
+                            OutlinedButton(
+                                onClick = { imagePickerLauncher.launch("image/*") },
+                                modifier = Modifier.weight(1f).height(40.dp),
                                 shape = RoundedCornerShape(CardCornerRadius),
-                                singleLine = true,
-                                isError = photoUri.isBlank()
-                            )
-
-                            // Binago ko ang layout ng buttons para maging maayos
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                contentPadding = PaddingValues(horizontal = 4.dp)
                             ) {
-                                OutlinedButton(
-                                    onClick = { imagePickerLauncher.launch("image/*") },
-                                    modifier = Modifier.weight(1f).height(40.dp),
-                                    shape = RoundedCornerShape(CardCornerRadius),
-                                    contentPadding = PaddingValues(horizontal = 4.dp)
-                                ) {
-                                    Icon(Icons.Rounded.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Gallery", maxLines = 1, style = MaterialTheme.typography.labelMedium)
-                                }
-                                OutlinedButton(
-                                    onClick = {
-                                        val permissionCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
-                                        if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
-                                            try {
-                                                val photoFile = File.createTempFile(
-                                                    "JPEG_${System.currentTimeMillis()}_",
-                                                    ".jpg",
-                                                    context.cacheDir
-                                                )
-                                                val uri = FileProvider.getUriForFile(
-                                                    context,
-                                                    "${context.packageName}.fileprovider",
-                                                    photoFile
-                                                )
-                                                tempCameraUri = uri
-                                                cameraLauncher.launch(uri)
-                                            } catch (e: Exception) {
-                                                showError = true
-                                                errorMessage = "Failed to create camera file: ${e.localizedMessage}"
-                                            }
-                                        } else {
-                                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                Icon(Icons.Rounded.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Gallery", maxLines = 1, style = MaterialTheme.typography.labelMedium)
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    val permissionCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+                                    if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+                                        try {
+                                            val photoFile = File.createTempFile(
+                                                "JPEG_${System.currentTimeMillis()}_",
+                                                ".jpg",
+                                                context.cacheDir
+                                            )
+                                            val uri = FileProvider.getUriForFile(
+                                                context,
+                                                "${context.packageName}.fileprovider",
+                                                photoFile
+                                            )
+                                            tempCameraUri = uri
+                                            cameraLauncher.launch(uri)
+                                        } catch (e: Exception) {
+                                            showError = true
+                                            errorMessage = "Failed to create camera file: ${e.localizedMessage}"
                                         }
-                                    },
-                                    modifier = Modifier.weight(1f).height(40.dp),
-                                    shape = RoundedCornerShape(CardCornerRadius),
-                                    contentPadding = PaddingValues(horizontal = 4.dp)
-                                ) {
-                                    Icon(Icons.Rounded.PhotoCamera, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Camera", maxLines = 1, style = MaterialTheme.typography.labelMedium)
-                                }
+                                    } else {
+                                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                    }
+                                },
+                                modifier = Modifier.weight(1f).height(40.dp),
+                                shape = RoundedCornerShape(CardCornerRadius),
+                                contentPadding = PaddingValues(horizontal = 4.dp)
+                            ) {
+                                Icon(Icons.Rounded.PhotoCamera, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Camera", maxLines = 1, style = MaterialTheme.typography.labelMedium)
                             }
                         }
                     }
-                    if (photoUri.isBlank()) {
-                        Text(
-                            text = "Item photo is required",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(start = 4.dp)
-                        )
-                    }
-
                     Text("Category", style = MaterialTheme.typography.labelMedium)
                     ScrollableChipRow(
                         items = categories,
@@ -418,86 +395,86 @@ fun ItemFormScreen(
                         onSelected = { category = it }
                     )
 
-                    // Inayos ang layout ng Color at Quantity
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = color,
-                            onValueChange = { color = it },
-                            label = { Text("Color / Tone") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(CardCornerRadius),
-                            singleLine = true
-                        )
-
-                        val currentQty = unitQuantityStr.toIntOrNull() ?: 0
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                FilledTonalIconButton(
-                                    onClick = {
-                                        val current = unitQuantityStr.toIntOrNull() ?: 1
-                                        if (current > 1) {
-                                            unitQuantityStr = (current - 1).toString()
-                                        }
-                                    },
-                                    enabled = currentQty > 1,
-                                    modifier = Modifier.size(48.dp),
-                                    shape = RoundedCornerShape(CardCornerRadius)
-                                ) {
-                                    Icon(Icons.Rounded.Remove, contentDescription = "Decrease Quantity")
-                                }
-
-                                Spacer(modifier = Modifier.width(12.dp))
-
-                                OutlinedTextField(
-                                    value = unitQuantityStr,
-                                    onValueChange = { newValue ->
-                                        if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
-                                            unitQuantityStr = newValue
-                                        }
-                                    },
-                                    label = { Text("Qty *", textAlign = TextAlign.Center) },
-                                    modifier = Modifier.width(100.dp),
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    shape = RoundedCornerShape(CardCornerRadius),
-                                    singleLine = true,
-                                    isError = currentQty < 1,
-                                    textStyle = androidx.compose.ui.text.TextStyle(textAlign = TextAlign.Center)
-                                )
-
-                                Spacer(modifier = Modifier.width(12.dp))
-
-                                FilledTonalIconButton(
-                                    onClick = {
-                                        val current = unitQuantityStr.toIntOrNull() ?: 0
-                                        unitQuantityStr = (current + 1).coerceAtLeast(1).toString()
-                                    },
-                                    modifier = Modifier.size(48.dp),
-                                    shape = RoundedCornerShape(CardCornerRadius)
-                                ) {
-                                    Icon(Icons.Rounded.Add, contentDescription = "Increase Quantity")
-                                }
-                            }
-                            if (currentQty < 1) {
-                                Text(
-                                    text = "Minimum quantity is 1",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        }
-                    }
+//                    // Inayos ang layout ng Color at Quantity
+//                    Column(
+//                        modifier = Modifier.fillMaxWidth(),
+//                        verticalArrangement = Arrangement.spacedBy(16.dp)
+//                    ) {
+//                        OutlinedTextField(
+//                            value = color,
+//                            onValueChange = { color = it },
+//                            label = { Text("Color / Tone") },
+//                            modifier = Modifier.fillMaxWidth(),
+//                            shape = RoundedCornerShape(CardCornerRadius),
+//                            singleLine = true
+//                        )
+//
+//                        val currentQty = unitQuantityStr.toIntOrNull() ?: 0
+//                        Column(
+//                            modifier = Modifier.fillMaxWidth(),
+//                            verticalArrangement = Arrangement.spacedBy(4.dp)
+//                        ) {
+//                            Row(
+//                                modifier = Modifier.fillMaxWidth(),
+//                                verticalAlignment = Alignment.CenterVertically,
+//                                horizontalArrangement = Arrangement.Center
+//                            ) {
+//                                FilledTonalIconButton(
+//                                    onClick = {
+//                                        val current = unitQuantityStr.toIntOrNull() ?: 1
+//                                        if (current > 1) {
+//                                            unitQuantityStr = (current - 1).toString()
+//                                        }
+//                                    },
+//                                    enabled = currentQty > 1,
+//                                    modifier = Modifier.size(48.dp),
+//                                    shape = RoundedCornerShape(CardCornerRadius)
+//                                ) {
+//                                    Icon(Icons.Rounded.Remove, contentDescription = "Decrease Quantity")
+//                                }
+//
+//                                Spacer(modifier = Modifier.width(12.dp))
+//
+//                                OutlinedTextField(
+//                                    value = unitQuantityStr,
+//                                    onValueChange = { newValue ->
+//                                        if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
+//                                            unitQuantityStr = newValue
+//                                        }
+//                                    },
+//                                    label = { Text("Qty *", textAlign = TextAlign.Center) },
+//                                    modifier = Modifier.width(100.dp),
+//                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+//                                    shape = RoundedCornerShape(CardCornerRadius),
+//                                    singleLine = true,
+//                                    isError = currentQty < 1,
+//                                    textStyle = androidx.compose.ui.text.TextStyle(textAlign = TextAlign.Center)
+//                                )
+//
+//                                Spacer(modifier = Modifier.width(12.dp))
+//
+//                                FilledTonalIconButton(
+//                                    onClick = {
+//                                        val current = unitQuantityStr.toIntOrNull() ?: 0
+//                                        unitQuantityStr = (current + 1).coerceAtLeast(1).toString()
+//                                    },
+//                                    modifier = Modifier.size(48.dp),
+//                                    shape = RoundedCornerShape(CardCornerRadius)
+//                                ) {
+//                                    Icon(Icons.Rounded.Add, contentDescription = "Increase Quantity")
+//                                }
+//                            }
+//                            if (currentQty < 1) {
+//                                Text(
+//                                    text = "Minimum quantity is 1",
+//                                    style = MaterialTheme.typography.bodySmall,
+//                                    color = MaterialTheme.colorScheme.error,
+//                                    modifier = Modifier.fillMaxWidth(),
+//                                    textAlign = TextAlign.Center
+//                                )
+//                            }
+//                        }
+//                    }
 
                     Text("Age Group", style = MaterialTheme.typography.labelMedium)
                     ScrollableChipRow(
