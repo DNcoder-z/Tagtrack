@@ -91,7 +91,8 @@ fun StatusBadge(
     text: String,
     type: BadgeType = BadgeType.STATUS
 ) {
-    val (bgColor, textColor) = when (type) {
+
+    val ( bgColor, textColor) = when (type) {
         BadgeType.STATUS -> when (text.lowercase()) {
             "available" -> Green.copy(alpha = 0.15f) to Green
             "rented" -> Amber.copy(alpha = 0.15f) to Amber
@@ -105,11 +106,12 @@ fun StatusBadge(
             else -> BlueBronze.copy(alpha = 0.15f) to BlueBronze
         }
     }
+//    val bgColor = MaterialTheme.colorScheme.surfaceVariant
 
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(BadgeCornerRadius))
-            .background(bgColor)
+            //.background(bgColor)
             .padding(horizontal = 8.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center
     ) {

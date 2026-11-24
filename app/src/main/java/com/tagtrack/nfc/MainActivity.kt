@@ -210,13 +210,10 @@ class MainActivity : ComponentActivity() {
                                     itemToEdit = screen.item,
                                     prefilledNfcCode = screen.prefilledNfcCode,
                                     defaultUnqCode = 500009,
+                                    existingItems = uiState.inventoryItems,
                                     onBackClick = { viewModel.navigateTo(Screen.InventoryScreen) },
-                                    onSaveItem = { item ->
-                                        if (screen.isEditing) {
-                                            viewModel.updateItem(item)
-                                        } else {
-                                            viewModel.insertItem(item)
-                                        }
+                                    onSaveItems = { items ->
+                                        viewModel.upsertAll(items)
                                     }
                                 )
                             }

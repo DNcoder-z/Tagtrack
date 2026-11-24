@@ -126,7 +126,7 @@ fun SettingsScreen(
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline)
 
-                    SettingInfoRow(label = "Total Unique Records", value = totalRecords.toString())
+                    //SettingInfoRow(label = "Total Unique Records", value = totalRecords.toString())
                     SettingInfoRow(label = "Total Units Count", value = totalUnits.toString())
                     SettingInfoRow(label = "Database Engine", value = "Room SQLite (Local)")
                 }
@@ -156,8 +156,8 @@ fun SettingsScreen(
 
                     SettingInfoRow(label = "App Name", value = "TagTrack NFC")
                     SettingInfoRow(label = "Version", value = "1.0.0 (Build 100)")
-                    SettingInfoRow(label = "Design System", value = "Material 3 (Expressive)")
-                    SettingInfoRow(label = "Architecture", value = "MVVM + Jetpack Compose")
+//                    SettingInfoRow(label = "Design System", value = "Material 3 (Expressive)")
+//                    SettingInfoRow(label = "Architecture", value = "MVVM + Jetpack Compose")
                 }
             }
         }

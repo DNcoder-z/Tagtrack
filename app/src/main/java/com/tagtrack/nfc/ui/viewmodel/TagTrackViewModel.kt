@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.tagtrack.nfc.data.Item
 import com.tagtrack.nfc.data.ItemRepository
+import com.tagtrack.nfc.util.QuantityCalculator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,7 +39,7 @@ data class TagTrackUiState(
     val searchQuery: String = "",
     val selectedCategory: String = "All Categories",
     val selectedStatus: String = "All",
-    val selectedCondition: String = "All", // BAGONG DAGDAG
+    val selectedCondition: String = "All",
     val availableCategories: List<String> = listOf("All Categories"),
     val filteredItems: List<Item> = emptyList(),
     val selectedItem: Item? = null,
@@ -55,6 +56,8 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(TagTrackUiState())
     val uiState: StateFlow<TagTrackUiState> = _uiState.asStateFlow()
 
+    private var isStartupRecalculated = false
+
     init {
         observeRepository()
     }
@@ -62,9 +65,16 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
     private fun observeRepository() {
         viewModelScope.launch {
             repository.allItems.collect { items ->
+                if (!isStartupRecalculated && items.isNotEmpty()) {
+                    isStartupRecalculated = true
+                    val recalculated = QuantityCalculator.recalculateAll(items)
+                    if (recalculated != items) {
+                        repository.upsertAll(recalculated)
+                        return@collect
+                    }
+                }
                 _uiState.update { state ->
                     val filtered = filterItems(items, state.searchQuery, state.selectedCategory, state.selectedStatus, state.selectedCondition)
-                    // BAGONG LOGIC: Kukunin lang ang categories na may items na pasok sa filter
                     val categoriesFromFiltered = filtered.map { it.category }.distinct().sorted()
                     val categories = listOf("All Categories") + categoriesFromFiltered
 
@@ -73,30 +83,26 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
                         availableCategories = categories,
                         filteredItems = filtered,
                         totalRecords = items.size,
-                        totalUnits = items.sumOf { it.unitQuantity }
+                        totalUnits = items.size
                     )
                 }
             }
         }
     }
 
-    // BINAGO: Dinagdagan ng condition parameter
     private fun filterItems(items: List<Item>, query: String, category: String, status: String, condition: String): List<Item> {
-        // 1. Filter by Category
         val categoryFiltered = if (category == "All Categories" || category.isBlank()) {
             items
         } else {
             items.filter { it.category.equals(category, ignoreCase = true) }
         }
 
-        // 2. Filter by Status
         val statusFiltered = if (status == "All" || status.isBlank()) {
             categoryFiltered
         } else {
             categoryFiltered.filter { it.status.equals(status, ignoreCase = true) }
         }
 
-        // 3. Filter by Condition (BAGONG DAGDAG)
         val conditionFiltered = if (condition == "All" || condition.isBlank()) {
             statusFiltered
         } else {
@@ -111,7 +117,6 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
             }
         }
 
-        // 4. Filter by Search Query
         if (query.isBlank()) return conditionFiltered
         val trimmed = query.trim().lowercase()
         return conditionFiltered.filter { item ->
@@ -178,7 +183,6 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
         }
     }
 
-    // BAGONG FUNCTION: Para sa Condition filter
     fun updateSelectedCondition(condition: String) {
         _uiState.update { state ->
             val filtered = filterItems(state.inventoryItems, state.searchQuery, state.selectedCategory, state.selectedStatus, condition)
@@ -212,6 +216,30 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
         return repository.getNextUnqCode()
     }
 
+    fun upsertAll(items: List<Item>, onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isBusy = true) }
+            try {
+                repository.upsertAll(items)
+                _uiState.update {
+                    it.copy(
+                        snackbarMessage = "Items saved successfully",
+                        isBusy = false,
+                        currentScreen = Screen.InventoryScreen
+                    )
+                }
+                onComplete()
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        snackbarMessage = "Error saving items: ${e.localizedMessage}",
+                        isBusy = false
+                    )
+                }
+            }
+        }
+    }
+
     fun insertItem(item: Item, onComplete: () -> Unit = {}) {
         if (item.unitQuantity < 1) {
             _uiState.update { it.copy(snackbarMessage = "Unit quantity cannot be less than 1") }
@@ -238,7 +266,8 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
                     }
                     return@launch
                 }
-                repository.insertItem(item)
+                val recalculated = QuantityCalculator.recalculate(_uiState.value.inventoryItems, item)
+                repository.upsertAll(recalculated)
                 _uiState.update {
                     it.copy(
                         snackbarMessage = "Item '${item.itemName}' saved successfully",
@@ -284,7 +313,8 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
                     }
                     return@launch
                 }
-                repository.updateItem(item)
+                val recalculated = QuantityCalculator.recalculate(_uiState.value.inventoryItems, item)
+                repository.upsertAll(recalculated)
                 _uiState.update {
                     it.copy(
                         snackbarMessage = "Item '${item.itemName}' updated successfully",
@@ -308,6 +338,11 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
         viewModelScope.launch {
             try {
                 repository.deleteItem(item)
+                val remaining = _uiState.value.inventoryItems.filterNot { it.nfcCode.equals(item.nfcCode, ignoreCase = true) }
+                val recalculated = QuantityCalculator.recalculateAll(remaining)
+                if (recalculated.isNotEmpty()) {
+                    repository.upsertAll(recalculated)
+                }
                 _uiState.update {
                     it.copy(
                         snackbarMessage = "Item '${item.itemName}' deleted",
@@ -326,6 +361,11 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
         viewModelScope.launch {
             try {
                 repository.deleteItemByNfcCode(nfcCode)
+                val remaining = _uiState.value.inventoryItems.filterNot { it.nfcCode.equals(nfcCode, ignoreCase = true) }
+                val recalculated = QuantityCalculator.recalculateAll(remaining)
+                if (recalculated.isNotEmpty()) {
+                    repository.upsertAll(recalculated)
+                }
                 _uiState.update {
                     it.copy(
                         snackbarMessage = "Item deleted successfully",
@@ -356,7 +396,7 @@ class TagTrackViewModel(private val repository: ItemRepository) : ViewModel() {
                         val primary = sortedGroup.first()
                         val duplicates = sortedGroup.drop(1)
 
-                        val totalQty = group.sumOf { it.unitQuantity }
+                        val totalQty = group.size // or group.sumOf { it.unitQuantity }
                         val updatedPrimary = primary.copy(
                             unitQuantity = totalQty,
                             dateUpdated = System.currentTimeMillis()

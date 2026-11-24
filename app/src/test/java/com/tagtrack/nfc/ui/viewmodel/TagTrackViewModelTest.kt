@@ -3,6 +3,7 @@ package com.tagtrack.nfc.ui.viewmodel
 import com.tagtrack.nfc.data.Item
 import com.tagtrack.nfc.data.ItemDao
 import com.tagtrack.nfc.data.ItemRepository
+import com.tagtrack.nfc.util.QuantityCalculator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -45,6 +46,11 @@ class TagTrackViewModelTest {
             itemsFlow.update { itemsMap.values.sortedBy { it.itemName } }
         }
 
+        override suspend fun upsertAll(items: List<Item>) {
+            items.forEach { itemsMap[it.nfcCode] = it }
+            itemsFlow.update { itemsMap.values.sortedBy { it.itemName } }
+        }
+
         override suspend fun updateItem(item: Item) {
             itemsMap[item.nfcCode] = item
             itemsFlow.update { itemsMap.values.sortedBy { it.itemName } }
@@ -60,7 +66,7 @@ class TagTrackViewModelTest {
             itemsFlow.update { itemsMap.values.sortedBy { it.itemName } }
         }
 
-        override fun getTotalUnitsFlow(): Flow<Int?> = MutableStateFlow(itemsMap.values.sumOf { it.unitQuantity })
+        override fun getTotalUnitsFlow(): Flow<Int?> = MutableStateFlow(itemsMap.size)
 
         override fun getTotalRecordsFlow(): Flow<Int> = MutableStateFlow(itemsMap.size)
 
@@ -160,43 +166,6 @@ class TagTrackViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(2, viewModel.uiState.value.filteredItems.size)
-    }
-
-    @Test
-    fun testMergeSimilarItems() = runTest {
-        val item1 = Item(
-            nfcCode = "04A1", unqCode = 1, itemName = "Blue Jeans", category = "Apparel",
-            ageGroup = "Adult", size = "32", color = "Blue", condition = "New",
-            status = "Available", unitQuantity = 2, storageLocation = "Rack A",
-            description = "Desc", photoUri = "content://dummy/photo1.jpg", dateAdded = 100L, dateUpdated = null
-        )
-        val item2 = Item(
-            nfcCode = "04A2", unqCode = 2, itemName = "blue jeans", category = "apparel",
-            ageGroup = "Adult", size = "32", color = "Blue", condition = "Good",
-            status = "Available", unitQuantity = 3, storageLocation = "Rack B",
-            description = "Desc", photoUri = "content://dummy/photo2.jpg", dateAdded = 200L, dateUpdated = null
-        )
-        val item3 = Item(
-            nfcCode = "04A3", unqCode = 3, itemName = "Red Hat", category = "Accessories",
-            ageGroup = "Adult", size = "Free", color = "Red", condition = "New",
-            status = "Available", unitQuantity = 1, storageLocation = "Rack C",
-            description = "Desc", photoUri = "content://dummy/photo3.jpg", dateAdded = 300L, dateUpdated = null
-        )
-
-        viewModel.insertItem(item1)
-        viewModel.insertItem(item2)
-        viewModel.insertItem(item3)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(3, viewModel.uiState.value.inventoryItems.size)
-
-        viewModel.mergeSimilarItems()
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val items = viewModel.uiState.value.inventoryItems
-        assertEquals(2, items.size)
-        val mergedBlueJeans = items.find { it.itemName.equals("Blue Jeans", ignoreCase = true) }
-        assertEquals(5, mergedBlueJeans?.unitQuantity)
     }
 
     @Test
@@ -343,5 +312,55 @@ class TagTrackViewModelTest {
 
         assertTrue(viewModel.uiState.value.inventoryItems.isEmpty())
         assertEquals("Item photo is required", viewModel.uiState.value.snackbarMessage)
+    }
+
+    @Test
+    fun testQuantityCalculatorNormalize() {
+        assertEquals("tuxedo suit", QuantityCalculator.normalize("  Tuxedo Suit  "))
+    }
+
+    @Test
+    fun testQuantityCalculatorRecalculate() {
+        val existing = listOf(
+            Item("04A1", 1, "Classic Tuxedo", "Formal Wear", "Adult", "40R", "Black", "Good", "Available", 1, null, null, "photo", 100L, null)
+        )
+        val newItem = Item("04A2", 2, "classic tuxedo ", " formal wear ", "Adult", "42R", "Black", "Good", "Available", 1, null, null, "photo", 200L, null)
+        val recalculated = QuantityCalculator.recalculate(existing, newItem)
+
+        assertEquals(2, recalculated.size)
+        assertEquals(2, recalculated[0].unitQuantity)
+        assertEquals(2, recalculated[1].unitQuantity)
+    }
+
+    @Test
+    fun testQuantityCalculatorRecalculateAllOnDelete() {
+        val items = listOf(
+            Item("04A1", 1, "Classic Tuxedo", "Formal Wear", "Adult", "40R", "Black", "Good", "Available", 2, null, null, "photo", 100L, null),
+            Item("04A2", 2, "Classic Tuxedo", "Formal Wear", "Adult", "42R", "Black", "Good", "Available", 2, null, null, "photo", 200L, null)
+        )
+        val remaining = items.filterNot { it.nfcCode == "04A2" }
+        val recalculated = QuantityCalculator.recalculateAll(remaining)
+
+        assertEquals(1, recalculated.size)
+        assertEquals(1, recalculated[0].unitQuantity)
+    }
+
+    @Test
+    fun testTotalUnitsCountsItemCountNotSumOfUnitQuantity() = runTest {
+        // Create 2 items with same name & category so QuantityCalculator sets unitQuantity = 2 for each
+        val item1 = Item("04A1", 1, "Classic Tuxedo", "Formal Wear", "Adult", "40R", "Black", "Good", "Available", 1, null, null, "photo1.jpg", 100L, null)
+        val item2 = Item("04A2", 2, "Classic Tuxedo", "Formal Wear", "Adult", "42R", "Black", "Good", "Available", 1, null, null, "photo2.jpg", 200L, null)
+
+        viewModel.insertItem(item1)
+        viewModel.insertItem(item2)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(2, state.inventoryItems.size)
+        // unitQuantity for both is 2 because recalculate sets unitQuantity = count (2)
+        assertEquals(2, state.inventoryItems[0].unitQuantity)
+        assertEquals(2, state.inventoryItems[1].unitQuantity)
+        // totalUnits should be equal to actual item count (2), NOT sum of unitQuantity (4)
+        assertEquals(2, state.totalUnits)
     }
 }

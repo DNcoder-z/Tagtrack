@@ -34,7 +34,7 @@ fun ScannerScreen(
     ) {
         TagTrackHeader(
             title = "Scan NFC Tag",
-            subtitle = "Ready to scan read-only hardware UIDs",
+
             onBackClick = onBackClick
         )
 
@@ -102,54 +102,54 @@ fun ScannerScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // Simulator for testing without physical NFC tags
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(CardCornerRadius),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Simulator / Test Scan",
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    )
-                    OutlinedTextField(
-                        value = sampleNfcInput,
-                        onValueChange = { sampleNfcInput = it },
-                        label = { Text("Simulate NFC UID (Hex)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(CardCornerRadius),
-                        singleLine = true
-                    )
-                    Button(
-                        onClick = {
-                            val uid = sampleNfcInput.trim().uppercase()
-                            if (uid.isNotBlank()) {
-                                onSimulateScan(uid)
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(CardCornerRadius),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.TouchApp,
-                            contentDescription = null
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Simulate Tap")
-                    }
-                }
-            }
+//            Card(
+//                modifier = Modifier.fillMaxWidth(),
+//                shape = RoundedCornerShape(CardCornerRadius),
+//                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+//                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+//            ) {
+//                Column(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .padding(16.dp),
+//                    horizontalAlignment = Alignment.CenterHorizontally,
+//                    verticalArrangement = Arrangement.spacedBy(12.dp)
+//                ) {
+//                    Text(
+//                        text = "Simulator / Test Scan",
+//                        style = MaterialTheme.typography.titleSmall.copy(
+//                            fontWeight = FontWeight.Bold,
+//                            color = MaterialTheme.colorScheme.onSurface
+//                        )
+//                    )
+//                    OutlinedTextField(
+//                        value = sampleNfcInput,
+//                        onValueChange = { sampleNfcInput = it },
+//                        label = { Text("Simulate NFC UID (Hex)") },
+//                        modifier = Modifier.fillMaxWidth(),
+//                        shape = RoundedCornerShape(CardCornerRadius),
+//                        singleLine = true
+//                    )
+//                    Button(
+//                        onClick = {
+//                            val uid = sampleNfcInput.trim().uppercase()
+//                            if (uid.isNotBlank()) {
+//                                onSimulateScan(uid)
+//                            }
+//                        },
+//                        modifier = Modifier.fillMaxWidth(),
+//                        shape = RoundedCornerShape(CardCornerRadius),
+//                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+//                    ) {
+//                        Icon(
+//                            imageVector = Icons.Rounded.TouchApp,
+//                            contentDescription = null
+//                        )
+//                        Spacer(modifier = Modifier.width(8.dp))
+//                        Text("Simulate Tap")
+//                    }
+//                }
+//            }
 
             Spacer(modifier = Modifier.height(16.dp))
 

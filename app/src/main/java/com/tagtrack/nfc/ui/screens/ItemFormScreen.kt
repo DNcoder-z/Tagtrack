@@ -23,7 +23,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -33,6 +32,7 @@ import com.tagtrack.nfc.ui.components.TagTrackHeader
 import com.tagtrack.nfc.ui.theme.BlueBronze
 import com.tagtrack.nfc.ui.theme.CardCornerRadius
 import com.tagtrack.nfc.util.ImageStorageManager
+import com.tagtrack.nfc.util.QuantityCalculator
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,8 +41,9 @@ fun ItemFormScreen(
     itemToEdit: Item? = null,
     prefilledNfcCode: String? = null,
     defaultUnqCode: Int = 500001,
+    existingItems: List<Item> = emptyList(),
     onBackClick: () -> Unit,
-    onSaveItem: (Item) -> Unit
+    onSaveItems: (List<Item>) -> Unit
 ) {
     val isEditing = itemToEdit != null
     val context = LocalContext.current
@@ -56,7 +57,6 @@ fun ItemFormScreen(
     var color by remember { mutableStateOf(itemToEdit?.color ?: "") }
     var condition by remember { mutableStateOf(itemToEdit?.condition ?: "Good") }
     var status by remember { mutableStateOf(itemToEdit?.status ?: "Available") }
-    var unitQuantityStr by remember { mutableStateOf(itemToEdit?.unitQuantity?.toString() ?: "1") }
     var storageLocation by remember { mutableStateOf(itemToEdit?.storageLocation ?: "") }
     var description by remember { mutableStateOf(itemToEdit?.description ?: "") }
     var photoUri by remember { mutableStateOf(itemToEdit?.photoUri ?: "") }
@@ -80,7 +80,7 @@ fun ItemFormScreen(
                         showUpdateConfirmation = false
                         pendingItemToSave = null
                         if (itemToSave != null) {
-                            onSaveItem(itemToSave)
+                            onSaveItems(QuantityCalculator.recalculate(existingItems, itemToSave))
                         }
                     }
                 ) {
@@ -338,7 +338,6 @@ fun ItemFormScreen(
                             }
                         }
 
-                        // Buttons sa ibaba ng photo
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -395,87 +394,14 @@ fun ItemFormScreen(
                         onSelected = { category = it }
                     )
 
-                    // Inayos ang layout ng Color at Quantity
-                    Column(
+                    OutlinedTextField(
+                        value = color,
+                        onValueChange = { color = it },
+                        label = { Text("Color / Tone *") },
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = color,
-                            onValueChange = { color = it },
-                            label = { Text("Color / Tone") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(CardCornerRadius),
-                            singleLine = true
-                        )
-                    }
-//
-//                        val currentQty = unitQuantityStr.toIntOrNull() ?: 0
-//                        Column(
-//                            modifier = Modifier.fillMaxWidth(),
-//                            verticalArrangement = Arrangement.spacedBy(4.dp)
-//                        ) {
-//                            Row(
-//                                modifier = Modifier.fillMaxWidth(),
-//                                verticalAlignment = Alignment.CenterVertically,
-//                                horizontalArrangement = Arrangement.Center
-//                            ) {
-//                                FilledTonalIconButton(
-//                                    onClick = {
-//                                        val current = unitQuantityStr.toIntOrNull() ?: 1
-//                                        if (current > 1) {
-//                                            unitQuantityStr = (current - 1).toString()
-//                                        }
-//                                    },
-//                                    enabled = currentQty > 1,
-//                                    modifier = Modifier.size(48.dp),
-//                                    shape = RoundedCornerShape(CardCornerRadius)
-//                                ) {
-//                                    Icon(Icons.Rounded.Remove, contentDescription = "Decrease Quantity")
-//                                }
-//
-//                                Spacer(modifier = Modifier.width(12.dp))
-//
-//                                OutlinedTextField(
-//                                    value = unitQuantityStr,
-//                                    onValueChange = { newValue ->
-//                                        if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
-//                                            unitQuantityStr = newValue
-//                                        }
-//                                    },
-//                                    label = { Text("Qty *", textAlign = TextAlign.Center) },
-//                                    modifier = Modifier.width(100.dp),
-//                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-//                                    shape = RoundedCornerShape(CardCornerRadius),
-//                                    singleLine = true,
-//                                    isError = currentQty < 1,
-//                                    textStyle = androidx.compose.ui.text.TextStyle(textAlign = TextAlign.Center)
-//                                )
-//
-//                                Spacer(modifier = Modifier.width(12.dp))
-//
-//                                FilledTonalIconButton(
-//                                    onClick = {
-//                                        val current = unitQuantityStr.toIntOrNull() ?: 0
-//                                        unitQuantityStr = (current + 1).coerceAtLeast(1).toString()
-//                                    },
-//                                    modifier = Modifier.size(48.dp),
-//                                    shape = RoundedCornerShape(CardCornerRadius)
-//                                ) {
-//                                    Icon(Icons.Rounded.Add, contentDescription = "Increase Quantity")
-//                                }
-//                            }
-//                            if (currentQty < 1) {
-//                                Text(
-//                                    text = "Minimum quantity is 1",
-//                                    style = MaterialTheme.typography.bodySmall,
-//                                    color = MaterialTheme.colorScheme.error,
-//                                    modifier = Modifier.fillMaxWidth(),
-//                                    textAlign = TextAlign.Center
-//                                )
-//                            }
-//                        }
-//                    }
+                        shape = RoundedCornerShape(CardCornerRadius),
+                        singleLine = true
+                    )
 
                     Text("Age Group", style = MaterialTheme.typography.labelMedium)
                     ScrollableChipRow(
@@ -549,11 +475,10 @@ fun ItemFormScreen(
             }
 
             // Save Button
-            val qty = unitQuantityStr.toIntOrNull() ?: 0
             val isFormValid = itemName.isNotBlank() &&
+                    color.isNotBlank() &&
                     nfcCodeStr.isNotBlank() &&
                     (unqCodeStr.toIntOrNull() ?: 0) > 0 &&
-                    qty >= 1 &&
                     photoUri.isNotBlank()
 
             Button(
@@ -585,11 +510,6 @@ fun ItemFormScreen(
                         errorMessage = "Valid Unique Code is required."
                         return@Button
                     }
-                    if (qty < 1) {
-                        showError = true
-                        errorMessage = "Unit quantity cannot be less than 1."
-                        return@Button
-                    }
 
                     val currentTime = System.currentTimeMillis()
                     val finalItem = Item(
@@ -599,10 +519,10 @@ fun ItemFormScreen(
                         category = category,
                         ageGroup = ageGroup,
                         size = size,
-                        color = color.ifBlank { null },
+                        color = color.trim(),
                         condition = condition,
                         status = status,
-                        unitQuantity = qty,
+                        unitQuantity = itemToEdit?.unitQuantity ?: 1,
                         storageLocation = storageLocation.ifBlank { null },
                         description = description.ifBlank { null },
                         photoUri = photoUri.trim(),
@@ -613,7 +533,7 @@ fun ItemFormScreen(
                         pendingItemToSave = finalItem
                         showUpdateConfirmation = true
                     } else {
-                        onSaveItem(finalItem)
+                        onSaveItems(QuantityCalculator.recalculate(existingItems, finalItem))
                     }
                 },
                 enabled = isFormValid,

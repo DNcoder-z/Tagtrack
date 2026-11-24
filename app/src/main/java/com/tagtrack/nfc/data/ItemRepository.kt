@@ -1,7 +1,6 @@
 package com.tagtrack.nfc.data
 
 import android.content.Context
-import androidx.core.net.toUri
 import com.tagtrack.nfc.util.ImageStorageManager
 import kotlinx.coroutines.flow.Flow
 
@@ -24,6 +23,10 @@ class ItemRepository(
 
     suspend fun insertItem(item: Item) {
         itemDao.insertItem(item)
+    }
+
+    suspend fun upsertAll(items: List<Item>) {
+        itemDao.upsertAll(items)
     }
 
     suspend fun updateItem(item: Item) {
