@@ -250,7 +250,7 @@ fun ItemTile(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(1f)
+            .aspectRatio(1.25f)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(CardCornerRadius),
         colors = CardDefaults.cardColors(
@@ -261,7 +261,7 @@ fun ItemTile(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(10.dp),
+                .padding(8.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
@@ -292,25 +292,21 @@ fun ItemTile(
                         )
                     }
                 }
-                Text(
-                    text = item.category,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalAlignment = Alignment.Start
                 ) {
+                    StatusBadge(text = item.status, type = BadgeType.STATUS)
+                    StatusBadge(text = item.condition, type = BadgeType.CONDITION)
                     Text(
                         text = "Qty: ${item.unitQuantity}",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         ),
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
@@ -328,18 +324,17 @@ fun ItemTile(
                     softWrap = false,
                     overflow = TextOverflow.Ellipsis
                 )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(modifier = Modifier.weight(1f, fill = false)) {
-                    StatusBadge(text = item.status, type = BadgeType.STATUS)
-                }
-                Box(modifier = Modifier.weight(1f, fill = false)) {
-                    StatusBadge(text = item.condition, type = BadgeType.CONDITION)
+                if (!item.color.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(1.dp))
+                    Text(
+                        text = "Color: ${item.color}",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
         }
