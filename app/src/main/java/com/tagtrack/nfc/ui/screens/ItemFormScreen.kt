@@ -395,19 +395,20 @@ fun ItemFormScreen(
                         onSelected = { category = it }
                     )
 
-//                    // Inayos ang layout ng Color at Quantity
-//                    Column(
-//                        modifier = Modifier.fillMaxWidth(),
-//                        verticalArrangement = Arrangement.spacedBy(16.dp)
-//                    ) {
-//                        OutlinedTextField(
-//                            value = color,
-//                            onValueChange = { color = it },
-//                            label = { Text("Color / Tone") },
-//                            modifier = Modifier.fillMaxWidth(),
-//                            shape = RoundedCornerShape(CardCornerRadius),
-//                            singleLine = true
-//                        )
+                    // Inayos ang layout ng Color at Quantity
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = color,
+                            onValueChange = { color = it },
+                            label = { Text("Color / Tone") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(CardCornerRadius),
+                            singleLine = true
+                        )
+                    }
 //
 //                        val currentQty = unitQuantityStr.toIntOrNull() ?: 0
 //                        Column(
@@ -562,6 +563,11 @@ fun ItemFormScreen(
                     if (itemName.isBlank()) {
                         showError = true
                         errorMessage = "Item Name is required."
+                        return@Button
+                    }
+                    if (color.isBlank()) {
+                        showError = true
+                        errorMessage = "Color / Tone is required."
                         return@Button
                     }
                     if (nfcCodeStr.isBlank()) {

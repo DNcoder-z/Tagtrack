@@ -44,13 +44,13 @@ fun InventoryScreen(
             title = "Inventory",
             subtitle = "${items.size} items found",
             actions = {
-                IconButton(onClick = onMergeSimilarItems) {
-                    Icon(
-                        imageVector = Icons.Rounded.CallMerge,
-                        contentDescription = "Merge Similar Items",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
+//                IconButton(onClick = onMergeSimilarItems) {
+//                    Icon(
+//                        imageVector = Icons.Rounded.CallMerge,
+//                        contentDescription = "Merge Similar Items",
+//                        tint = MaterialTheme.colorScheme.primary
+//                    )
+//                }
                 IconButton(onClick = onNavigateToScanner) {
                     Icon(
                         imageVector = Icons.Rounded.Add,

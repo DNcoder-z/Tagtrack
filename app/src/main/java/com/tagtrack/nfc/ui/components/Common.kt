@@ -93,13 +93,13 @@ fun StatusBadge(
 ) {
     val (bgColor, textColor) = when (type) {
         BadgeType.STATUS -> when (text.lowercase()) {
-            "available" -> Muted.copy(alpha = 0.15f) to Muted
+            "available" -> Green.copy(alpha = 0.15f) to Green
             "rented" -> Amber.copy(alpha = 0.15f) to Amber
             "unavailable", "damaged", "maintenance" -> Red.copy(alpha = 0.15f) to Red
             else -> BlueBronze.copy(alpha = 0.15f) to BlueBronze
         }
         BadgeType.CONDITION -> when (text.lowercase()) {
-            "new", "excellent", "good" -> Muted.copy(alpha = 0.15f) to Muted
+            "new", "excellent", "good" -> Green.copy(alpha = 0.15f) to Green
             "fair", "needs cleaning" -> Amber.copy(alpha = 0.15f) to Amber
             "poor", "damaged", "needs repair" -> Red.copy(alpha = 0.15f) to Red
             else -> BlueBronze.copy(alpha = 0.15f) to BlueBronze
@@ -119,7 +119,10 @@ fun StatusBadge(
                 fontWeight = FontWeight.SemiBold,
                 color = textColor,
                 fontSize = 11.sp
-            )
+            ),
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -151,6 +154,7 @@ fun ItemCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Icon / Thumbnail placeholder
+            Spacer(modifier = Modifier.width(16.dp))
             Box(
                 modifier = Modifier
                     .size(52.dp)
@@ -175,14 +179,14 @@ fun ItemCard(
                 }
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(24.dp))
 
             Column(
                 modifier = Modifier.weight(1f)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -193,30 +197,20 @@ fun ItemCard(
                         ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     Text(
-                        text = "Qty: ${item.unitQuantity}",
+                        text = item.category,
                         style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Medium
-                        )
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                Spacer(modifier = Modifier.height(2.dp))
-
-                // BINAGO: Tinanggal ang "NFC #${item.nfcCode}" para malinis tignan
-                Text(
-                    text = item.category,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
                 Spacer(modifier = Modifier.height(6.dp))
+
 
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -277,8 +271,8 @@ fun ItemTile(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(4.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
@@ -298,17 +292,14 @@ fun ItemTile(
                         )
                     }
                 }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = item.category,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                Text(
+                    text = item.category,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Surface(
                     shape = RoundedCornerShape(4.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant
@@ -333,7 +324,8 @@ fun ItemTile(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     ),
-                    maxLines = 2,
+                    maxLines = 1,
+                    softWrap = false,
                     overflow = TextOverflow.Ellipsis
                 )
             }
