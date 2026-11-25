@@ -191,6 +191,7 @@ fun ItemFormScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .imePadding()
             .background(MaterialTheme.colorScheme.background)
     ) {
         TagTrackHeader(
@@ -203,6 +204,7 @@ fun ItemFormScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
